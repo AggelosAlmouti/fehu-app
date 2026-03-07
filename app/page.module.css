@@ -2,12 +2,15 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
   align-items: center;
   justify-content: center;
 }
 
 .title {
+  all: unset;
   font-size: 1.25rem;
   font-weight: bold;
+  border: 2px solid white;
+  border-radius: 10px;
+  padding: 3px;
 }
