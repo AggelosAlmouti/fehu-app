@@ -6,7 +6,7 @@ import Link from "next/link";
 export default function Home() {
   return (
     <main className={styles.main}>
-      <Link href="/app" className={styles.title}>
+      <Link href="/app" className={styles.button}>
         Coming Soon...
       </Link>
       <Image
