@@ -12,12 +12,18 @@
   border-top: 1px solid var(--detail);
 }
 
+.tabWrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .tab {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  flex: 1;
   text-decoration: none;
   color: var(--foreground);
   font-size: 11px;

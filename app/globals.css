@@ -2,7 +2,12 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  cursor: url('/cursor.png'), pointer;
+}
+
+@media (pointer: fine) {
+  * {
+    cursor: url('/cursor.png') 12 8, pointer !important;
+  }
 }
 
 :root {
@@ -21,7 +26,7 @@ body {
   background-image: radial-gradient(circle, var(--detail) 1px, transparent 1px);
   background-size: 20px 20px;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Georgia, sans-serif;
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
 }
