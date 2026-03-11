@@ -3,7 +3,7 @@
     padding-bottom: calc(60px + env(safe-area-inset-bottom) + 14px);
 }
 
-/* Hero Tabs */
+/* Hero */
 .tabs {
   display: flex;
   width: fit-content;
@@ -30,7 +30,7 @@
 
 .hero {
   text-align: center;
-  margin-top: 32px;
+  margin: 20px 0;
 }
 
 .heroAmount {
@@ -44,13 +44,13 @@
   color: var(--foreground);
 }
 
-/* Budgets */
+/* Budgets cards */
 .budgets {
   margin-top: 32px;
   display: flex;
   flex-direction: column;
   gap: 15px;
-  margin: 0 5px;
+  margin: 0 10px;
 }
 
 .budgetCard {
@@ -65,4 +65,27 @@
   justify-content: space-between;
   font-size: 14px;
   font-weight: 500;
+}
+
+/* Budget card ticks */
+.progressTrack {
+  position: relative;
+  height: 6px;
+  background-color: var(--detail);
+  border-radius: 100px;
+  margin-top: 12px;
+}
+
+.progressBar {
+  height: 100%;
+  border-radius: 100px;
+}
+
+.tick {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 12px;
+  background-color: var(--background);
+  transform: translateX(-50%);
 }

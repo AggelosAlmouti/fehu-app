@@ -36,8 +36,8 @@
 .addButton {
   display: flex;
   padding: 4px;
-  background-color: var(--accent);
-  color: var(--foreground);
+  background-color: var(--foreground);
+  color: var(--background);
   border: 2px solid var(--foreground);
   border-radius: 50%;
   cursor: pointer;
