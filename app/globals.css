@@ -2,18 +2,14 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  cursor: url('/cursor.png'), pointer;
 }
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --foreground: #1a1a1a;
+  --accent: #D5C58A;
+  --detail: rgba(0, 0, 0, 0.304);
 }
 
 html {
@@ -22,9 +18,10 @@ html {
 
 body {
   background: var(--background);
+  background-image: radial-gradient(circle, var(--detail) 1px, transparent 1px);
+  background-size: 20px 20px;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
-  overflow: hidden;
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
 }

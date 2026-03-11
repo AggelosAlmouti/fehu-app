@@ -7,8 +7,9 @@
   display: flex;
   align-items: center;
   justify-content: space-around;
-  background-color: white;
+  background-color: var(--background);
   padding-bottom: env(safe-area-inset-bottom);
+  border-top: 1px solid var(--detail);
 }
 
 .tab {
@@ -18,19 +19,19 @@
   gap: 4px;
   flex: 1;
   text-decoration: none;
-  color: gray;
+  color: var(--foreground);
   font-size: 11px;
 }
 
 .active {
-  color: black;
+  font-weight: 900;
 }
 
 .addButton {
   display: flex;
   padding: 4px;
+  background-color: var(--accent);
   border: 2px solid black;
   border-radius: 50%;
   cursor: pointer;
-  color: black;
 }
