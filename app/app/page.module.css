@@ -3,6 +3,7 @@
     padding-bottom: calc(60px + env(safe-area-inset-bottom) + 14px);
 }
 
+/* Hero Tabs */
 .tabs {
   display: flex;
   width: fit-content;
@@ -16,7 +17,7 @@
   border-radius: 10px;
   font-size: 16px;
   border: 1px solid var(--detail);
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   background-color: var(--background);
   width: 70px;
   text-align: center;
@@ -41,4 +42,27 @@
 .heroLabel {
   font-size: 16px;
   color: var(--foreground);
+}
+
+/* Budgets */
+.budgets {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin: 0 5px;
+}
+
+.budgetCard {
+  background-color: var(--background);
+  border: 1px solid var(--detail);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.budgetHeader {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 500;
 }
