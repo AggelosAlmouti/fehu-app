@@ -37,7 +37,8 @@
   display: flex;
   padding: 4px;
   background-color: var(--accent);
-  border: 2px solid black;
+  color: var(--foreground);
+  border: 2px solid var(--foreground);
   border-radius: 50%;
   cursor: pointer;
 }
