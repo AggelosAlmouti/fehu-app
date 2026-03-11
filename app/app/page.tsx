@@ -4,7 +4,7 @@ import { useState } from "react";
 import styles from "./page.module.css";
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState("Spending");
+  const [activeTab, setActiveTab] = useState("spending");
 
   return (
     <main className={styles.main}>
@@ -15,6 +15,11 @@ export default function App() {
         <button 
         className={`${styles.tab} ${activeTab === "income" ? styles.activeTab : ""}`}
         onClick={() => setActiveTab("income")}>Income</button>
+      </div>
+
+      <div className={styles.hero}>
+        <p className={styles.heroAmount}>{activeTab === "spending" ? "350" : "1800"} €</p>
+        <p className={styles.heroLabel}>{activeTab === "spending" ? "Spent" : "Earned"} this month</p>
       </div>
     </main>
   );

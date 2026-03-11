@@ -1,30 +1,44 @@
 .main {
-    padding-top: calc(env(safe-area-inset-top));
-    padding-bottom: calc(60px + env(safe-area-inset-bottom));
+    padding-top: calc(env(safe-area-inset-top) + 14px);
+    padding-bottom: calc(60px + env(safe-area-inset-bottom) + 14px);
 }
 
 .tabs {
   display: flex;
-  align-self: center;
-  background-color: #ebebeb;
-  border-radius: 100px;
-  padding: 4px;
   width: fit-content;
   margin: 0 auto;
+  gap: 5px;
 }
 
 .tab {
+  all: unset;
   padding: 6px 20px;
-  border-radius: 100px;
-  font-size: 14px;
-  font-weight: 500;
-  border: none;
-  background: transparent;
-  color: gray;
+  border-radius: 10px;
+  font-size: 16px;
+  border: 1px solid var(--detail);
   transition: all 0.2s ease;
+  background-color: var(--background);
+  width: 70px;
+  text-align: center;
 }
 
 .activeTab {
   background-color: var(--foreground);
-  color: white;
+  color: var(--background);
+}
+
+.hero {
+  text-align: center;
+  margin-top: 32px;
+}
+
+.heroAmount {
+  font-size: 52px;
+  font-weight: 700;
+  letter-spacing: -2px;
+}
+
+.heroLabel {
+  font-size: 16px;
+  color: var(--foreground);
 }
