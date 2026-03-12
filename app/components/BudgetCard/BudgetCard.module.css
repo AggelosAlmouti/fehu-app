@@ -1,0 +1,35 @@
+.card {
+  background-color: var(--background);
+  border: 1px solid var(--detail);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.progressTrack {
+  position: relative;
+  height: 6px;
+  background-color: var(--detail);
+  border-radius: 100px;
+  margin-top: 12px;
+}
+
+.progressBar {
+  height: 100%;
+  border-radius: 100px;
+}
+
+.tick {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 12px;
+  background-color: var(--background);
+  transform: translateX(-50%);
+}

@@ -1,6 +1,6 @@
 .main {
-    padding-top: calc(env(safe-area-inset-top) + 14px);
-    padding-bottom: calc(60px + env(safe-area-inset-bottom) + 14px);
+  padding-top: calc(env(safe-area-inset-top) + 14px);
+  padding-bottom: calc(60px + env(safe-area-inset-bottom) + 14px);
 }
 
 /* Hero */
@@ -44,48 +44,10 @@
   color: var(--foreground);
 }
 
-/* Budgets cards */
+/* Budget Cards */
 .budgets {
-  margin-top: 32px;
   display: flex;
   flex-direction: column;
   gap: 15px;
-  margin: 0 10px;
-}
-
-.budgetCard {
-  background-color: var(--background);
-  border: 1px solid var(--detail);
-  border-radius: 10px;
-  padding: 16px;
-}
-
-.budgetHeader {
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-/* Budget card ticks */
-.progressTrack {
-  position: relative;
-  height: 6px;
-  background-color: var(--detail);
-  border-radius: 100px;
-  margin-top: 12px;
-}
-
-.progressBar {
-  height: 100%;
-  border-radius: 100px;
-}
-
-.tick {
-  position: absolute;
-  top: -3px;
-  width: 2px;
-  height: 12px;
-  background-color: var(--background);
-  transform: translateX(-50%);
+  margin: 32px 10px 0;
 }

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { House, Clock, Plus, CalendarDays, Settings } from "lucide-react";
 import styles from "./BottomNav.module.css";
-import { StyleRegistry } from "styled-jsx";
 
 type NavTab =
   | { type: "link"; href: string; label: string; icon: React.ElementType }
@@ -27,9 +26,9 @@ export default function BottomNav() {
         if (tab.type === "add") {
           return (
             <div key={index} className={styles.tabWrapper}>
-            <button key={index} className={styles.addButton}>
-              <Plus size={26} strokeWidth={2} />
-            </button>
+              <button key={index} className={styles.addButton}>
+                <Plus size={26} strokeWidth={2} />
+              </button>
             </div>
           );
         }
@@ -37,13 +36,13 @@ export default function BottomNav() {
         const isActive = pathname === tab.href;
         return (
           <div key={tab.href} className={styles.tabWrapper}>
-          <Link
-            href={tab.href}
-            className={`${styles.tab} ${isActive ? styles.active : ""}`}
-          >
-            <tab.icon size={22} strokeWidth={isActive ? 2.5 : 1.8} />
-            <span>{tab.label}</span>
-          </Link>
+            <Link
+              href={tab.href}
+              className={`${styles.tab} ${isActive ? styles.active : ""}`}
+            >
+              <tab.icon size={22} strokeWidth={isActive ? 2.5 : 1.8} />
+              <span>{tab.label}</span>
+            </Link>
           </div>
         );
       })}
