@@ -6,15 +6,17 @@
 
 @media (pointer: fine) {
   * {
-    cursor: url('/cursor.png') 12 8, pointer !important;
+    cursor:
+      url("/cursor.png") 12 8,
+      pointer !important;
   }
 }
 
 :root {
-  --background: #ffffff;
+  --background: #f7f7f7;
   --foreground: #1a1a1a;
-  --accent: #EFFF98;
-  --detail: rgba(0, 0, 0, 0.304);
+  --accent: #d5c58a;
+  --detail: rgba(0, 0, 0, 0.2);
 }
 
 html {
@@ -23,8 +25,12 @@ html {
 
 body {
   background: var(--background);
-  background-image: radial-gradient(circle, var(--detail) 1px, transparent 1px);
-  background-size: 20px 20px;
+  background-image: radial-gradient(
+    circle,
+    rgba(0, 0, 0, 0.25) 1px,
+    transparent 1px
+  );
+  background-size: 8px 8px;
   color: var(--foreground);
   font-family: var(--font-geist-sans), Georgia, sans-serif;
   overscroll-behavior: none;

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import styles from "./page.module.css";
 import BudgetCard from "../components/BudgetCard/BudgetCard";
+import { TrendingUp, TrendingDown } from "lucide-react";
 
 const budgets = [
   { name: "Food", spent: 40, total: 100 },
@@ -12,50 +12,52 @@ const budgets = [
   { name: "Shopping", spent: 30, total: 120 },
 ];
 
-export default function App() {
-  const [activeTab, setActiveTab] = useState("spending");
+const totalBalance = 1450;
+const earned = { amount: 1800, percentChange: 1.5 };
+const spent = { amount: 350, percentChange: 1.5 };
 
+export default function App() {
   return (
     <main className={styles.main}>
-      {/* Hero */}
-      <div className={styles.tabs}>
-        <button
-          className={`${styles.tab} ${activeTab === "spending" ? styles.activeTab : ""}`}
-          onClick={() => setActiveTab("spending")}
-        >
-          Spending
-        </button>
-        <button
-          className={`${styles.tab} ${activeTab === "income" ? styles.activeTab : ""}`}
-          onClick={() => setActiveTab("income")}
-        >
-          Income
-        </button>
-      </div>
-
       <div className={styles.hero}>
-        <p className={styles.heroLabel}>
-          {activeTab === "spending" ? "Spent" : "Earned"} this month
-        </p>
-        <p className={styles.heroAmount}>
-          {activeTab === "spending" ? "350" : "1800"}€
-        </p>
+        <p className={styles.heroLabel}>Total Balance</p>
+        <p className={styles.heroAmount}>{totalBalance.toLocaleString()} €</p>
       </div>
 
-      {/* Budget Cards */}
-      {activeTab === "spending" && (
-        <div className={styles.budgets}>
-          <h3>Budgets</h3>
-          {budgets.map((budget) => (
-            <BudgetCard
-              key={budget.name}
-              name={budget.name}
-              spent={budget.spent}
-              total={budget.total}
-            />
-          ))}
+      <div className={styles.summaryCards}>
+        <div className={styles.summaryCard}>
+          <p className={styles.summaryLabel}>Earned this month</p>
+          <p className={styles.summaryAmount}>
+            {earned.amount.toLocaleString()} €
+          </p>
+          <div className={styles.trend} style={{ color: "green" }}>
+            <TrendingUp size={14} />
+            <span> {earned.percentChange}%</span>
+          </div>
         </div>
-      )}
+        <div className={styles.summaryCard}>
+          <p className={styles.summaryLabel}>Spent this month</p>
+          <p className={styles.summaryAmount}>
+            {spent.amount.toLocaleString()} €
+          </p>
+          <div className={styles.trend} style={{ color: "red" }}>
+            <TrendingUp size={14} />
+            <span> {spent.percentChange}%</span>
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.budgets}>
+        <h3>Budgets</h3>
+        {budgets.map((budget) => (
+          <BudgetCard
+            key={budget.name}
+            name={budget.name}
+            spent={budget.spent}
+            total={budget.total}
+          />
+        ))}
+      </div>
     </main>
   );
 }
