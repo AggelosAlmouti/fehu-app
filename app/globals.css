@@ -27,10 +27,10 @@ body {
   background: var(--background);
   background-image: radial-gradient(
     circle,
-    rgba(0, 0, 0, 0.25) 1px,
+    rgba(0, 0, 0, 0.2) 1px,
     transparent 1px
   );
-  background-size: 8px 8px;
+  background-size: 12px 12px;
   color: var(--foreground);
   font-family: var(--font-geist-sans), Georgia, sans-serif;
   overscroll-behavior: none;
