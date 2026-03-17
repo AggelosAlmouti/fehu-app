@@ -79,6 +79,7 @@ export default function BottomNav() {
           >
             <Link
               href={tab.href}
+              replace
               className={`${styles.tab} ${isActive ? styles.active : ""}`}
             >
               <tab.icon size={22} />
