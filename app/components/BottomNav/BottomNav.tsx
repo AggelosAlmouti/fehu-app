@@ -32,14 +32,20 @@ export default function BottomNav() {
   );
 
   useEffect(() => {
-    const activeWrapper = tabRefs.current[activeIndex];
-    const nav = navRef.current;
-    if (!activeWrapper || !nav) return;
+    const calculate = () => {
+      const activeWrapper = tabRefs.current[activeIndex];
+      const nav = navRef.current;
+      if (!activeWrapper || !nav) return;
 
-    const tabRect = activeWrapper.getBoundingClientRect();
-    const navRect = nav.getBoundingClientRect();
-    const center = tabRect.left - navRect.left + tabRect.width / 2;
-    setIndicatorX(center - INDICATOR_WIDTH / 2);
+      const tabRect = activeWrapper.getBoundingClientRect();
+      const navRect = nav.getBoundingClientRect();
+      const center = tabRect.left - navRect.left + tabRect.width / 2;
+      setIndicatorX(center - INDICATOR_WIDTH / 2);
+    };
+
+    calculate();
+    window.addEventListener("resize", calculate);
+    return () => window.removeEventListener("resize", calculate);
   }, [activeIndex]);
 
   let linkIndex = 0;
