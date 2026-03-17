@@ -8,12 +8,13 @@
   align-items: center;
   justify-content: space-around;
   background-color: var(--background);
+  border-top: 1px solid var(--detail);
   padding-bottom: env(safe-area-inset-bottom);
 }
 
 .indicator {
   position: absolute;
-  top: 0;
+  top: 3px;
   left: 0;
   width: 20px;
   height: 3px;
