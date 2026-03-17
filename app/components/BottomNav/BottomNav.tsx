@@ -75,7 +75,7 @@ export default function BottomNav() {
               href={tab.href}
               className={`${styles.tab} ${isActive ? styles.active : ""}`}
             >
-              <tab.icon size={22} strokeWidth={isActive ? 2.5 : 1.8} />
+              <tab.icon size={22} />
               <span>{tab.label}</span>
             </Link>
           </div>

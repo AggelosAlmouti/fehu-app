@@ -39,10 +39,6 @@
   font-size: 11px;
 }
 
-.active {
-  font-weight: 900;
-}
-
 .addButton {
   display: flex;
   padding: 4px;
