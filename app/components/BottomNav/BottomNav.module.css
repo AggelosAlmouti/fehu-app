@@ -11,6 +11,17 @@
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+.indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 3px;
+  background-color: var(--foreground);
+  border-radius: 0 0 4px 4px;
+  transition: transform 0.3s ease;
+}
+
 .tabWrapper {
   flex: 1;
   display: flex;

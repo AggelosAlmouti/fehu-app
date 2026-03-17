@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { House, Clock, Plus, CalendarDays, Settings } from "lucide-react";
+import { useRef, useEffect, useState } from "react";
 import styles from "./BottomNav.module.css";
 
 type NavTab =
@@ -17,16 +18,43 @@ const tabs: NavTab[] = [
   { type: "link", href: "/app/settings", label: "Settings", icon: Settings },
 ];
 
+const INDICATOR_WIDTH = 20;
+
 export default function BottomNav() {
   const pathname = usePathname();
+  const navRef = useRef<HTMLElement>(null);
+  const tabRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [indicatorX, setIndicatorX] = useState(0);
+
+  const linkTabs = tabs.filter((t) => t.type === "link");
+  const activeIndex = linkTabs.findIndex(
+    (t) => t.type === "link" && t.href === pathname,
+  );
+
+  useEffect(() => {
+    const activeWrapper = tabRefs.current[activeIndex];
+    const nav = navRef.current;
+    if (!activeWrapper || !nav) return;
+
+    const tabRect = activeWrapper.getBoundingClientRect();
+    const navRect = nav.getBoundingClientRect();
+    const center = tabRect.left - navRect.left + tabRect.width / 2;
+    setIndicatorX(center - INDICATOR_WIDTH / 2);
+  }, [activeIndex]);
+
+  let linkIndex = 0;
 
   return (
-    <nav className={styles.nav}>
+    <nav ref={navRef} className={styles.nav}>
+      <div
+        className={styles.indicator}
+        style={{ transform: `translateX(${indicatorX}px)` }}
+      />
       {tabs.map((tab, index) => {
         if (tab.type === "add") {
           return (
             <div key={index} className={styles.tabWrapper}>
-              <button key={index} className={styles.addButton}>
+              <button className={styles.addButton}>
                 <Plus size={26} strokeWidth={2} />
               </button>
             </div>
@@ -34,8 +62,15 @@ export default function BottomNav() {
         }
 
         const isActive = pathname === tab.href;
+        const currentLinkIndex = linkIndex++;
         return (
-          <div key={tab.href} className={styles.tabWrapper}>
+          <div
+            key={tab.href}
+            ref={(el) => {
+              tabRefs.current[currentLinkIndex] = el;
+            }}
+            className={styles.tabWrapper}
+          >
             <Link
               href={tab.href}
               className={`${styles.tab} ${isActive ? styles.active : ""}`}
