@@ -1,0 +1,6 @@
+.main {
+  padding-top: calc(env(safe-area-inset-top) + 14px);
+  padding-bottom: calc(60px + env(safe-area-inset-bottom) + 16px);
+  padding-left: 16px;
+  padding-right: 16px;
+}

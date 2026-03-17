@@ -19,7 +19,7 @@
   width: 20px;
   height: 3px;
   background-color: var(--foreground);
-  border-radius: 0 0 4px 4px;
+  border-radius: 4px;
   transition: transform 0.3s ease;
 }
 

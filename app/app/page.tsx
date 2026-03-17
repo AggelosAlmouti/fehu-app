@@ -18,7 +18,7 @@ const spent = { amount: 350, percentChange: 1.5 };
 
 export default function App() {
   return (
-    <main className={styles.main}>
+    <>
       <div className={styles.hero}>
         <p className={styles.heroLabel}>Total Balance</p>
         <p className={styles.heroAmount}>{totalBalance.toLocaleString()} €</p>
@@ -58,6 +58,6 @@ export default function App() {
           />
         ))}
       </div>
-    </main>
+    </>
   );
 }
