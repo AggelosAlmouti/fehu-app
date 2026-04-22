@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { House, Clock, Plus, CalendarDays, Settings } from "lucide-react";
 import { useRef, useEffect, useState } from "react";
 import styles from "./BottomNav.module.css";
+import Drawer from "../Drawer/Drawer";
 
 type NavTab =
   | { type: "link"; href: string; label: string; icon: React.ElementType }
@@ -25,6 +26,7 @@ export default function BottomNav() {
   const navRef = useRef<HTMLElement>(null);
   const tabRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [indicatorX, setIndicatorX] = useState(0);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const linkTabs = tabs.filter((t) => t.type === "link");
   const activeIndex = linkTabs.findIndex(
@@ -60,7 +62,7 @@ export default function BottomNav() {
         if (tab.type === "add") {
           return (
             <div key={index} className={styles.tabWrapper}>
-              <button className={styles.addButton}>
+              <button className={styles.addButton} onClick={() => setDrawerOpen(true)}>
                 <Plus size={26} strokeWidth={2} />
               </button>
             </div>
@@ -88,6 +90,7 @@ export default function BottomNav() {
           </div>
         );
       })}
+      <Drawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </nav>
   );
 }

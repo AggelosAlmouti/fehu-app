@@ -23,6 +23,7 @@
 .progressBar {
   height: 100%;
   border-radius: 100px;
+  background-color: #39ff6a;
 }
 
 .tick {

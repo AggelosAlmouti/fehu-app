@@ -49,6 +49,14 @@
   margin-top: 4px;
 }
 
+.trendUp {
+  color: #39ff6a;
+}
+
+.trendDown {
+  color: #ff4f4f;
+}
+
 .budgets {
   display: flex;
   flex-direction: column;

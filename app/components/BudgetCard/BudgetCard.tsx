@@ -6,21 +6,6 @@ type BudgetCardProps = {
   total: number;
 };
 
-const today = new Date();
-const daysInMonth = new Date(
-  today.getFullYear(),
-  today.getMonth() + 1,
-  0,
-).getDate();
-const monthProgress = today.getDate() / daysInMonth;
-
-function getBarColor(spent: number, total: number) {
-  const spentRatio = spent / total;
-  if (spentRatio >= 1) return "red";
-  if (spentRatio > monthProgress) return "orange";
-  return "green";
-}
-
 export default function BudgetCard({ name, spent, total }: BudgetCardProps) {
   return (
     <div className={styles.card}>
@@ -33,10 +18,7 @@ export default function BudgetCard({ name, spent, total }: BudgetCardProps) {
       <div className={styles.progressTrack}>
         <div
           className={styles.progressBar}
-          style={{
-            width: `${Math.min((spent / total) * 100, 100)}%`,
-            backgroundColor: getBarColor(spent, total),
-          }}
+          style={{ width: `${Math.min((spent / total) * 100, 100)}%` }}
         />
         <div className={styles.tick} style={{ left: "25%" }} />
         <div className={styles.tick} style={{ left: "50%" }} />
