@@ -5,7 +5,12 @@
   --foreground: #eeeeee;
   --accent: #d4a942;
   --detail: #8a8a86;
+  --muted: #6f6f6b;
   --border: #232320;
+  --border-strong: #3a3a36;
+  --card: #1e1e1c;
+  --surface: #1a1a18;
+  --radius: 0.875rem;
 }
 
 @theme inline {
@@ -13,7 +18,12 @@
   --color-foreground: var(--foreground);
   --color-accent: var(--accent);
   --color-detail: var(--detail);
+  --color-muted: var(--muted);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-card: var(--card);
+  --color-surface: var(--surface);
+  --radius-card: var(--radius);
   --font-sans: var(--font-geist-sans);
 }
 
@@ -28,4 +38,51 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+@keyframes fehu-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.fehu-slide-in {
+  animation: fehu-slide-in 0.2s ease-out;
+}
+
+@keyframes fehu-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.fehu-slide-up {
+  animation: fehu-slide-up 0.25s ease-out;
+}
+
+@keyframes fehu-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fehu-fade-in {
+  animation: fehu-fade-in 0.2s ease-out;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
 }

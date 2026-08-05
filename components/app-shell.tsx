@@ -1,0 +1,125 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { Menu, X } from "lucide-react"
+import { navItems } from "@/lib/nav"
+
+function Wordmark({ className }: { className?: string }) {
+  return (
+    <div className={className}>
+      <span className="text-lg font-medium tracking-tight text-foreground">
+        fehu
+      </span>
+      <span className="ml-1 text-accent" aria-hidden="true">
+        ᚠ
+      </span>
+    </div>
+  )
+}
+
+function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+  const pathname = usePathname()
+  return (
+    <nav className="flex flex-col gap-1" aria-label="Primary">
+      {navItems.map((item) => {
+        const active =
+          item.href === "/"
+            ? pathname === "/"
+            : pathname.startsWith(item.href)
+        const Icon = item.icon
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={onNavigate}
+            aria-current={active ? "page" : undefined}
+            className={`flex items-center gap-3 rounded-[var(--radius-card)] px-3 py-2.5 text-sm transition-colors ${
+              active
+                ? "bg-card text-foreground"
+                : "text-detail hover:bg-card/60 hover:text-foreground"
+            }`}
+          >
+            <Icon
+              className={`size-[18px] shrink-0 ${active ? "text-accent" : ""}`}
+              aria-hidden="true"
+            />
+            {item.label}
+          </Link>
+        )
+      })}
+    </nav>
+  )
+}
+
+export function AppShell({ children }: { children: React.ReactNode }) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const pathname = usePathname()
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [pathname])
+
+  // Lock body scroll while the drawer is open.
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? "hidden" : ""
+    return () => {
+      document.body.style.overflow = ""
+    }
+  }, [menuOpen])
+
+  return (
+    <div className="min-h-dvh md:flex">
+      {/* Desktop permanent sidebar */}
+      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-border px-4 py-6 md:flex">
+        <Wordmark className="mb-8 px-3" />
+        <NavLinks />
+      </aside>
+
+      {/* Mobile top bar with burger */}
+      <header className="flex items-center justify-between px-5 pt-5 md:hidden">
+        <Wordmark />
+        <button
+          type="button"
+          onClick={() => setMenuOpen(true)}
+          aria-label="Open menu"
+          aria-expanded={menuOpen}
+          className="-mr-2 flex size-10 items-center justify-center rounded-full text-detail transition-colors hover:text-foreground"
+        >
+          <Menu className="size-[22px]" aria-hidden="true" />
+        </button>
+      </header>
+
+      {/* Mobile drawer */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <button
+            type="button"
+            aria-label="Close menu"
+            onClick={() => setMenuOpen(false)}
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          />
+          <div className="fehu-slide-in absolute right-0 top-0 flex h-full w-72 max-w-[80%] flex-col border-l border-border bg-background px-4 py-6 shadow-2xl">
+            <div className="mb-8 flex items-center justify-between px-3">
+              <Wordmark />
+              <button
+                type="button"
+                onClick={() => setMenuOpen(false)}
+                aria-label="Close menu"
+                className="flex size-9 items-center justify-center rounded-full text-detail transition-colors hover:text-foreground"
+              >
+                <X className="size-5" aria-hidden="true" />
+              </button>
+            </div>
+            <NavLinks onNavigate={() => setMenuOpen(false)} />
+          </div>
+        </div>
+      )}
+
+      {/* Main content */}
+      <main className="flex-1">{children}</main>
+    </div>
+  )
+}
