@@ -10,12 +10,12 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: "#141414",
     theme_color: "#141414",
     icons: [
-      { src: "/icons/launchericon-48x48.png?v=2", sizes: "48x48", type: "image/png" },
-      { src: "/icons/launchericon-72x72.png?v=2", sizes: "72x72", type: "image/png" },
-      { src: "/icons/launchericon-96x96.png?v=2", sizes: "96x96", type: "image/png" },
-      { src: "/icons/launchericon-144x144.png?v=2", sizes: "144x144", type: "image/png" },
-      { src: "/icons/launchericon-192x192.png?v=2", sizes: "192x192", type: "image/png" },
-      { src: "/icons/launchericon-512x512.png?v=2", sizes: "512x512", type: "image/png" },
+      { src: "/icons/launchericon-48x48.png", sizes: "48x48", type: "image/png" },
+      { src: "/icons/launchericon-72x72.png", sizes: "72x72", type: "image/png" },
+      { src: "/icons/launchericon-96x96.png", sizes: "96x96", type: "image/png" },
+      { src: "/icons/launchericon-144x144.png", sizes: "144x144", type: "image/png" },
+      { src: "/icons/launchericon-192x192.png", sizes: "192x192", type: "image/png" },
+      { src: "/icons/launchericon-512x512.png", sizes: "512x512", type: "image/png" },
     ],
   };
 }
