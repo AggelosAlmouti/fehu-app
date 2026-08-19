@@ -1,10 +1,11 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Menu, X } from "lucide-react"
-import { navItems } from "@/lib/nav"
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Menu, X } from "lucide-react";
+import { navItems } from "@/lib/nav";
+import { useAuth } from "@/lib/use-auth";
 
 function Wordmark({ className }: { className?: string }) {
   return (
@@ -16,19 +17,17 @@ function Wordmark({ className }: { className?: string }) {
         ᚠ
       </span>
     </div>
-  )
+  );
 }
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
-  const pathname = usePathname()
+  const pathname = usePathname();
   return (
     <nav className="flex flex-col gap-1" aria-label="Primary">
       {navItems.map((item) => {
         const active =
-          item.href === "/"
-            ? pathname === "/"
-            : pathname.startsWith(item.href)
-        const Icon = item.icon
+          item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+        const Icon = item.icon;
         return (
           <Link
             key={item.href}
@@ -47,79 +46,105 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             />
             {item.label}
           </Link>
-        )
+        );
       })}
     </nav>
-  )
+  );
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const pathname = usePathname()
+  const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const { isAnonymous, signInWithGoogle, logOut } = useAuth();
 
   // Close the mobile drawer whenever the route changes.
   useEffect(() => {
-    setMenuOpen(false)
-  }, [pathname])
+    setMenuOpen(false);
+  }, [pathname]);
 
   // Lock body scroll while the drawer is open.
   useEffect(() => {
-    document.body.style.overflow = menuOpen ? "hidden" : ""
+    document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => {
-      document.body.style.overflow = ""
-    }
-  }, [menuOpen])
+      document.body.style.overflow = "";
+    };
+  }, [menuOpen]);
 
   return (
-    <div className="min-h-dvh md:flex">
-      {/* Desktop permanent sidebar */}
-      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-border px-4 py-6 md:flex">
-        <Wordmark className="mb-8 px-3" />
-        <NavLinks />
-      </aside>
-
-      {/* Mobile top bar with burger */}
-      <header className="flex items-center justify-between px-5 pt-5 md:hidden">
-        <Wordmark />
-        <button
-          type="button"
-          onClick={() => setMenuOpen(true)}
-          aria-label="Open menu"
-          aria-expanded={menuOpen}
-          className="-mr-2 flex size-10 items-center justify-center rounded-full text-detail transition-colors hover:text-foreground"
-        >
-          <Menu className="size-[22px]" aria-hidden="true" />
-        </button>
-      </header>
-
-      {/* Mobile drawer */}
-      {menuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
+    <div className="min-h-dvh">
+      {isAnonymous ? (
+        <div className="flex items-center justify-between gap-3 border-b border-border bg-card px-5 py-2.5 text-xs text-detail">
+          <span>Using Fehu locally — sign in to sync across devices.</span>
           <button
             type="button"
-            aria-label="Close menu"
-            onClick={() => setMenuOpen(false)}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-          />
-          <div className="fehu-slide-in absolute right-0 top-0 flex h-full w-72 max-w-[80%] flex-col border-l border-border bg-background px-4 py-6 shadow-2xl">
-            <div className="mb-8 flex items-center justify-between px-3">
-              <Wordmark />
-              <button
-                type="button"
-                onClick={() => setMenuOpen(false)}
-                aria-label="Close menu"
-                className="flex size-9 items-center justify-center rounded-full text-detail transition-colors hover:text-foreground"
-              >
-                <X className="size-5" aria-hidden="true" />
-              </button>
-            </div>
-            <NavLinks onNavigate={() => setMenuOpen(false)} />
-          </div>
+            onClick={signInWithGoogle}
+            className="shrink-0 rounded-full bg-accent px-3 py-1 font-medium text-background"
+          >
+            Sign in with Google
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between gap-3 border-b border-border bg-card px-5 py-2.5 text-xs text-detail">
+          <span>Signed in — synced across devices.</span>
+          <button
+            type="button"
+            onClick={logOut}
+            className="shrink-0 rounded-full border border-border-strong px-3 py-1 font-medium text-detail hover:text-foreground"
+          >
+            Log out
+          </button>
         </div>
       )}
+      <div className="md:flex">
+        {/* Desktop permanent sidebar */}
+        <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-border px-4 py-6 md:flex">
+          <Wordmark className="mb-8 px-3" />
+          <NavLinks />
+        </aside>
 
-      {/* Main content */}
-      <main className="flex-1">{children}</main>
+        {/* Mobile top bar with burger */}
+        <header className="flex items-center justify-between px-5 pt-5 md:hidden">
+          <Wordmark />
+          <button
+            type="button"
+            onClick={() => setMenuOpen(true)}
+            aria-label="Open menu"
+            aria-expanded={menuOpen}
+            className="-mr-2 flex size-10 items-center justify-center rounded-full text-detail transition-colors hover:text-foreground"
+          >
+            <Menu className="size-[22px]" aria-hidden="true" />
+          </button>
+        </header>
+
+        {/* Mobile drawer */}
+        {menuOpen && (
+          <div className="fixed inset-0 z-50 md:hidden">
+            <button
+              type="button"
+              aria-label="Close menu"
+              onClick={() => setMenuOpen(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <div className="fehu-slide-in absolute right-0 top-0 flex h-full w-72 max-w-[80%] flex-col border-l border-border bg-background px-4 py-6 shadow-2xl">
+              <div className="mb-8 flex items-center justify-between px-3">
+                <Wordmark />
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen(false)}
+                  aria-label="Close menu"
+                  className="flex size-9 items-center justify-center rounded-full text-detail transition-colors hover:text-foreground"
+                >
+                  <X className="size-5" aria-hidden="true" />
+                </button>
+              </div>
+              <NavLinks onNavigate={() => setMenuOpen(false)} />
+            </div>
+          </div>
+        )}
+
+        {/* Main content */}
+        <main className="flex-1">{children}</main>
+      </div>
     </div>
-  )
+  );
 }

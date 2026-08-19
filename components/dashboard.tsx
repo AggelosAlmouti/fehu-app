@@ -1,69 +1,58 @@
-"use client"
+"use client";
 
-import { useMemo, useState } from "react"
-import { Plus } from "lucide-react"
+import { useMemo, useState } from "react";
+import { Plus } from "lucide-react";
 import {
-  expenses as initialExpenses,
   categoryMap,
-  monthLabel,
   monthlyBudget,
   formatCurrency,
   relativeDay,
+  currentMonthLabel,
   type Expense,
   type CategoryId,
-} from "@/lib/data"
+} from "@/lib/data";
 import {
   AddExpenseSheet,
   type NewExpense,
-} from "@/components/add-expense-sheet"
+} from "@/components/add-expense-sheet";
+import { useAuth } from "@/lib/use-auth";
+import { useExpenses } from "@/lib/use-expenses";
 
-type Filter = "all" | CategoryId
+type Filter = "all" | CategoryId;
 
 export function Dashboard() {
-  const [expenses, setExpenses] = useState<Expense[]>(initialExpenses)
-  const [filter, setFilter] = useState<Filter>("all")
-  const [sheetOpen, setSheetOpen] = useState(false)
+  const { user } = useAuth();
+  const { expenses, addExpense } = useExpenses(user?.uid);
+  const [filter, setFilter] = useState<Filter>("all");
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const spent = useMemo(
     () => expenses.reduce((sum, e) => sum + e.amount, 0),
     [expenses],
-  )
-  const pct = Math.min(100, Math.round((spent / monthlyBudget) * 100))
-  const remaining = Math.max(0, monthlyBudget - spent)
+  );
+  const pct = Math.min(100, Math.round((spent / monthlyBudget) * 100));
+  const remaining = Math.max(0, monthlyBudget - spent);
 
   // Filter chips: "All" plus categories that actually have expenses.
   const usedCategories = useMemo(() => {
-    const set = new Set<CategoryId>()
-    expenses.forEach((e) => set.add(e.category))
-    return Array.from(set)
-  }, [expenses])
+    const set = new Set<CategoryId>();
+    expenses.forEach((e) => set.add(e.category));
+    return Array.from(set);
+  }, [expenses]);
 
   const visible = useMemo(() => {
     const list =
       filter === "all"
         ? expenses
-        : expenses.filter((e) => e.category === filter)
-    return [...list].sort((a, b) => b.date.localeCompare(a.date))
-  }, [expenses, filter])
-
-  function handleAdd(next: NewExpense) {
-    setExpenses((prev) => [
-      {
-        id: `e${Date.now()}`,
-        title: next.title,
-        amount: next.amount,
-        category: next.category,
-        date: new Date().toISOString().slice(0, 10),
-      },
-      ...prev,
-    ])
-  }
+        : expenses.filter((e) => e.category === filter);
+    return [...list].sort((a, b) => b.date.localeCompare(a.date));
+  }, [expenses, filter]);
 
   return (
     <div className="mx-auto w-full max-w-xl px-5 pb-32 pt-6 md:pt-10">
       {/* Month */}
       <div className="mb-6">
-        <span className="text-sm text-detail">{monthLabel}</span>
+        <span className="text-sm text-detail">{currentMonthLabel()}</span>
       </div>
 
       {/* Spent this month */}
@@ -109,7 +98,11 @@ export function Dashboard() {
       {visible.length > 0 ? (
         <ul className="flex flex-col">
           {visible.map((e, i) => (
-            <ExpenseRow key={e.id} expense={e} last={i === visible.length - 1} />
+            <ExpenseRow
+              key={e.id}
+              expense={e}
+              last={i === visible.length - 1}
+            />
           ))}
         </ul>
       ) : (
@@ -123,7 +116,8 @@ export function Dashboard() {
         type="button"
         onClick={() => setSheetOpen(true)}
         aria-label="Add expense"
-        className="fixed bottom-6 right-6 z-40 flex size-14 items-center justify-center rounded-full bg-accent text-background shadow-lg shadow-black/40 transition-transform active:scale-95 md:size-14"
+        className="fixed bottom-6 right-6 z-40 flex size-14 items-center justify-center rounded-full bg-accent text-background shadow-lg shadow-black/40 transition-transform active:scale-95 disabled:opacity-40 md:size-14"
+        disabled={!user}
       >
         <Plus className="size-6" aria-hidden="true" />
       </button>
@@ -131,10 +125,10 @@ export function Dashboard() {
       <AddExpenseSheet
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
-        onAdd={handleAdd}
+        onAdd={addExpense}
       />
     </div>
-  )
+  );
 }
 
 function FilterChip({
@@ -142,9 +136,9 @@ function FilterChip({
   active,
   onClick,
 }: {
-  label: string
-  active: boolean
-  onClick: () => void
+  label: string;
+  active: boolean;
+  onClick: () => void;
 }) {
   return (
     <button
@@ -159,13 +153,13 @@ function FilterChip({
     >
       {label}
     </button>
-  )
+  );
 }
 
 function ExpenseRow({ expense, last }: { expense: Expense; last: boolean }) {
-  const category = categoryMap[expense.category]
-  const Icon = category.icon
-  const upcoming = Boolean(expense.due)
+  const category = categoryMap[expense.category];
+  const Icon = category.icon;
+  const upcoming = Boolean(expense.due);
 
   return (
     <li
@@ -185,15 +179,14 @@ function ExpenseRow({ expense, last }: { expense: Expense; last: boolean }) {
       </div>
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm">{expense.title}</div>
-        <div
-          className={`text-xs ${upcoming ? "text-accent" : "text-muted"}`}
-        >
-          {category.label} · {upcoming ? expense.due : relativeDay(expense.date)}
+        <div className={`text-xs ${upcoming ? "text-accent" : "text-muted"}`}>
+          {category.label} ·{" "}
+          {upcoming ? expense.due : relativeDay(expense.date)}
         </div>
       </div>
       <div className="text-sm font-medium">
         -{formatCurrency(expense.amount)}
       </div>
     </li>
-  )
+  );
 }

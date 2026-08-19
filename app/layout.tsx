@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
+import { AuthProvider } from "@/lib/use-auth";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,11 +26,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en" className={`${geistSans.variable} bg-background`}>
       <body>
-        <AppShell>{children}</AppShell>
+        <AuthProvider>
+          <AppShell>{children}</AppShell>
+        </AuthProvider>
       </body>
     </html>
   );
