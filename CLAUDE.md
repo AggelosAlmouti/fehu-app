@@ -20,12 +20,9 @@ Flat structure under `app/` (no route groups). `app/page.tsx` renders the `Dashb
 
 ### Auth model (`lib/use-auth.tsx`)
 
-Auth state is a React Context (`AuthProvider`/`useAuth`), not a plain hook — this is deliberate: more than one component (the app shell's sign-in banner, the dashboard) needs the same live auth state, and independent `onAuthStateChanged` listeners per hook call risk racing into separate anonymous accounts.
+Auth state is a React Context (`AuthProvider`/`useAuth`), not a plain hook — this is deliberate: more than one component (the app shell, the dashboard) needs the same live auth state, and independent `onAuthStateChanged` listeners per hook call risk racing into separate sessions.
 
-Sign-in flow, in order:
-1. On first load, the app silently creates a Firebase **anonymous** account (`signInAnonymously`) — no login screen, usable immediately, offline-capable.
-2. "Sign in with Google" calls `linkWithPopup` to upgrade that *same* anonymous account in place, preserving its `uid` (and therefore its Firestore data).
-3. If that Google account is already linked to a *different* anonymous session (e.g. signed in previously on another device), `linkWithPopup` rejects with `auth/credential-already-in-use`. The fallback does **not** open a second popup (Chrome blocks a popup that isn't chained directly off a fresh click) — it extracts the already-obtained credential via `GoogleAuthProvider.credentialFromError(err)` and calls `signInWithCredential` directly.
+Sign-in is mandatory and Google-only — plain `signInWithPopup`, no anonymous accounts. `AuthProvider` exposes a `loading` flag (true until the first `onAuthStateChanged` callback fires) so `AppShell` can avoid flashing the sign-in screen while Firebase checks for an existing session; `AppShell` renders a full-screen "Sign in with Google" gate whenever there's no `user`, and only renders the app (sidebar/nav/`children`) once signed in. There is deliberately no local-only/anonymous mode — every expense is tied to a real account from the first write, which avoids an earlier class of bugs around orphaned anonymous data and popup/credential-linking edge cases.
 
 Firestore security rules (managed in the Firebase console, not checked into this repo) restrict each user's data to `request.auth.uid == userId` on `/users/{userId}/expenses/**`.
 

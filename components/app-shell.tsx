@@ -55,7 +55,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
-  const { isAnonymous, signInWithGoogle, logOut } = useAuth();
+  const { user, loading, signInWithGoogle, logOut } = useAuth();
 
   // Close the mobile drawer whenever the route changes.
   useEffect(() => {
@@ -70,31 +70,43 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, [menuOpen]);
 
+  // Avoid flashing the sign-in screen while Firebase is still checking for
+  // an existing session.
+  if (loading) {
+    return <div className="min-h-dvh" />;
+  }
+
+  if (!user) {
+    return (
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-6 px-5 text-center">
+        <Wordmark />
+        <p className="max-w-xs text-sm text-muted">
+          Sign in with Google to track your expenses and keep them synced
+          across devices.
+        </p>
+        <button
+          type="button"
+          onClick={signInWithGoogle}
+          className="rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-background"
+        >
+          Sign in with Google
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-dvh">
-      {isAnonymous ? (
-        <div className="flex items-center justify-between gap-3 border-b border-border bg-card px-5 py-2.5 text-xs text-detail">
-          <span>Using Fehu locally — sign in to sync across devices.</span>
-          <button
-            type="button"
-            onClick={signInWithGoogle}
-            className="shrink-0 rounded-full bg-accent px-3 py-1 font-medium text-background"
-          >
-            Sign in with Google
-          </button>
-        </div>
-      ) : (
-        <div className="flex items-center justify-between gap-3 border-b border-border bg-card px-5 py-2.5 text-xs text-detail">
-          <span>Signed in — synced across devices.</span>
-          <button
-            type="button"
-            onClick={logOut}
-            className="shrink-0 rounded-full border border-border-strong px-3 py-1 font-medium text-detail hover:text-foreground"
-          >
-            Log out
-          </button>
-        </div>
-      )}
+      <div className="flex items-center justify-between gap-3 border-b border-border bg-card px-5 py-2.5 text-xs text-detail">
+        <span>Signed in — synced across devices.</span>
+        <button
+          type="button"
+          onClick={logOut}
+          className="shrink-0 rounded-full border border-border-strong px-3 py-1 font-medium text-detail hover:text-foreground"
+        >
+          Log out
+        </button>
+      </div>
       <div className="md:flex">
         {/* Desktop permanent sidebar */}
         <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-border px-4 py-6 md:flex">

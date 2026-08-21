@@ -116,8 +116,7 @@ export function Dashboard() {
         type="button"
         onClick={() => setSheetOpen(true)}
         aria-label="Add expense"
-        className="fixed bottom-6 right-6 z-40 flex size-14 items-center justify-center rounded-full bg-accent text-background shadow-lg shadow-black/40 transition-transform active:scale-95 disabled:opacity-40 md:size-14"
-        disabled={!user}
+        className="fixed bottom-6 right-6 z-40 flex size-14 items-center justify-center rounded-full bg-accent text-background shadow-lg shadow-black/40 transition-transform active:scale-95 md:size-14"
       >
         <Plus className="size-6" aria-hidden="true" />
       </button>
