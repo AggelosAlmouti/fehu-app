@@ -56,6 +56,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [signInError, setSignInError] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
   const pathname = usePathname();
   const { user, loading, signInWithGoogle, logOut } = useAuth();
 
@@ -103,10 +104,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   async function handleSignIn() {
     setSignInError(false);
+    setSigningIn(true);
     try {
       await signInWithGoogle();
     } catch {
       setSignInError(true);
+    } finally {
+      setSigningIn(false);
     }
   }
 
@@ -123,9 +127,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={handleSignIn}
-              className="rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-background"
+              disabled={signingIn}
+              className="rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-background disabled:opacity-60"
             >
-              Sign in with Google
+              {signingIn ? "Signing in…" : "Sign in with Google"}
             </button>
             {signInError && (
               <p className="max-w-xs text-sm text-danger">
