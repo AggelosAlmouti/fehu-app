@@ -55,6 +55,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  const [signInError, setSignInError] = useState(false);
   const pathname = usePathname();
   const { user, loading, signInWithGoogle, logOut } = useAuth();
 
@@ -100,6 +101,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <div className="min-h-dvh" />;
   }
 
+  async function handleSignIn() {
+    setSignInError(false);
+    try {
+      await signInWithGoogle();
+    } catch {
+      setSignInError(true);
+    }
+  }
+
   if (!user) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-6 px-5 text-center">
@@ -112,11 +122,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </p>
             <button
               type="button"
-              onClick={signInWithGoogle}
+              onClick={handleSignIn}
               className="rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-background"
             >
               Sign in with Google
             </button>
+            {signInError && (
+              <p className="max-w-xs text-sm text-danger">
+                Sign in failed. Check your connection and try again.
+              </p>
+            )}
           </>
         ) : (
           <p className="max-w-xs text-sm text-muted">
