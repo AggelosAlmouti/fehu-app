@@ -28,7 +28,8 @@ Firestore security rules (managed in the Firebase console, not checked into this
 
 ### Data layer
 
-- `lib/firebase.ts` — initializes the Firebase app, `auth`, and `db`. Firestore uses `persistentLocalCache` for offline read/write support (writes queue locally and sync when back online). Note: this covers *data* offline support only — there is no service worker yet, so the app shell itself (JS/CSS/HTML) is not cached for offline loading.
+- `lib/firebase.ts` — initializes the Firebase app, `auth`, and `db`. Firestore uses `persistentLocalCache` for offline read/write support (writes queue locally and sync when back online).
+- `public/service-worker.js` — service worker covering *app-shell* offline support (separate from Firestore's data-level offline support above): network-first for same-origin GET requests, falling back to the cache when offline; deliberately ignores cross-origin requests (so it never intercepts Firestore/Google API calls) and non-GET requests. Registered from `components/app-shell.tsx`, production builds only (`npm run dev` never registers it, so cached code doesn't go stale while iterating). `AppShell` also tracks `navigator.onLine` to show a "no internet connection" message on the sign-in screen instead of a sign-in button that's guaranteed to fail offline.
 - `lib/use-expenses.ts` — realtime Firestore hook (`onSnapshot`) scoped to `/users/{uid}/expenses`, ordered by date. `addExpense` writes a new doc; there's no update/delete yet.
 - `lib/data.ts` — **not** a data source (the old hard-coded expense array was removed once Firestore was wired up). It's shared `Expense`/`CategoryId` types, static category config (`categories`/`categoryMap`, not yet user-editable or persisted), the `monthlyBudget` constant (also not yet persisted — still hard-coded), and formatting helpers (`formatCurrency`, `relativeDay`, `currentMonthLabel`).
 

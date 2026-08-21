@@ -54,6 +54,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
   const pathname = usePathname();
   const { user, loading, signInWithGoogle, logOut } = useAuth();
 
@@ -70,6 +71,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, [menuOpen]);
 
+  // Track connectivity so the sign-in screen can explain why signing in
+  // isn't working, instead of a doomed-to-fail popup attempt.
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  // Register the offline service worker. Only in production: in dev, it
+  // would cache your own code and keep serving stale versions after every
+  // change, which is more confusing than helpful while iterating.
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/service-worker.js");
+    }
+  }, []);
+
   // Avoid flashing the sign-in screen while Firebase is still checking for
   // an existing session.
   if (loading) {
@@ -80,17 +104,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-6 px-5 text-center">
         <Wordmark />
-        <p className="max-w-xs text-sm text-muted">
-          Sign in with Google to track your expenses and keep them synced
-          across devices.
-        </p>
-        <button
-          type="button"
-          onClick={signInWithGoogle}
-          className="rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-background"
-        >
-          Sign in with Google
-        </button>
+        {isOnline ? (
+          <>
+            <p className="max-w-xs text-sm text-muted">
+              Sign in with Google to track your expenses and keep them synced
+              across devices.
+            </p>
+            <button
+              type="button"
+              onClick={signInWithGoogle}
+              className="rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-background"
+            >
+              Sign in with Google
+            </button>
+          </>
+        ) : (
+          <p className="max-w-xs text-sm text-muted">
+            No internet connection. Connect to the internet to sign in.
+          </p>
+        )}
       </div>
     );
   }
