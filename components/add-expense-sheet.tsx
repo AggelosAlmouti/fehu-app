@@ -119,7 +119,7 @@ export function AddExpenseSheet({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Corner cafe"
-              className="w-full rounded-[var(--radius-card)] border border-border bg-card px-3.5 py-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted focus:border-border-strong"
+              className="w-full rounded-[var(--radius-card)] border border-border bg-card px-3.5 py-3 text-base text-foreground outline-none transition-colors placeholder:text-muted focus:border-border-strong"
             />
           </div>
 

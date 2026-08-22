@@ -9,7 +9,8 @@ import {
 } from "react";
 import {
   onAuthStateChanged,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
   GoogleAuthProvider,
   type User,
@@ -17,6 +18,9 @@ import {
 import { auth } from "@/lib/firebase";
 
 const googleProvider = new GoogleAuthProvider();
+// Always show the account chooser, rather than silently reusing whatever
+// Google session already exists in the browser.
+googleProvider.setCustomParameters({ prompt: "select_account" });
 
 type AuthContextValue = {
   user: User | null;
@@ -32,6 +36,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Surface unexpected errors from a redirect round-trip in the console;
+    // onAuthStateChanged below is what actually picks up the signed-in user.
+    getRedirectResult(auth).catch((err) => {
+      console.error(err);
+    });
+
     return onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
@@ -39,8 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function signInWithGoogle() {
-    const result = await signInWithPopup(auth, googleProvider);
-    setUser(result.user);
+    await signInWithRedirect(auth, googleProvider);
   }
 
   async function logOut() {

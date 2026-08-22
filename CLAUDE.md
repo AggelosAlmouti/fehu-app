@@ -22,7 +22,7 @@ Flat structure under `app/` (no route groups). `app/page.tsx` renders the `Dashb
 
 Auth state is a React Context (`AuthProvider`/`useAuth`), not a plain hook — this is deliberate: more than one component (the app shell, the dashboard) needs the same live auth state, and independent `onAuthStateChanged` listeners per hook call risk racing into separate sessions.
 
-Sign-in is mandatory and Google-only — plain `signInWithPopup`, no anonymous accounts. `AuthProvider` exposes a `loading` flag (true until the first `onAuthStateChanged` callback fires) so `AppShell` can avoid flashing the sign-in screen while Firebase checks for an existing session; `AppShell` renders a full-screen "Sign in with Google" gate whenever there's no `user`, and only renders the app (sidebar/nav/`children`) once signed in. There is deliberately no local-only/anonymous mode — every expense is tied to a real account from the first write, which avoids an earlier class of bugs around orphaned anonymous data and popup/credential-linking edge cases.
+Sign-in is mandatory and Google-only — `signInWithRedirect`, no anonymous accounts. Popup (`signInWithPopup`) was tried first and works fine on desktop, but mobile browsers generally don't support real popup windows, which breaks Firebase's "is the popup still open" detection and left the sign-in UI hanging indefinitely if you closed it — redirect avoids that by not depending on a popup window at all. `googleProvider` is configured with `prompt: "select_account"` so the account chooser always shows, rather than silently reusing whatever Google session already exists in the browser. `AuthProvider` exposes a `loading` flag (true until the first `onAuthStateChanged` callback fires) so `AppShell` can avoid flashing the sign-in screen while Firebase checks for an existing session; `AppShell` renders a full-screen "Sign in with Google" gate whenever there's no `user`, and only renders the app (sidebar/nav/`children`) once signed in. There is deliberately no local-only/anonymous mode — every expense is tied to a real account from the first write, which avoids an earlier class of bugs around orphaned anonymous data and popup/credential-linking edge cases.
 
 Firestore security rules (managed in the Firebase console, not checked into this repo) restrict each user's data to `request.auth.uid == userId` on `/users/{userId}/expenses/**`.
 
@@ -36,6 +36,8 @@ Firestore security rules (managed in the Firebase console, not checked into this
 ### Styling
 
 Tailwind v4 theme tokens are defined in `app/globals.css` via CSS variables + `@theme inline`: `background`, `foreground`, `accent`, `detail`, `muted`, `border`, `border-strong`, `card`, `surface`, `radius-card`. Use these token names (`bg-card`, `text-detail`, etc.) rather than raw hex values or ad hoc colors.
+
+Any `<input>`/`<textarea>`/`<select>` needs `text-base` (16px) or larger — iOS Safari auto-zooms the page on focus if a form field's font size is under 16px. There's no global guard against this (a blanket CSS rule would also shrink the intentionally-large amount input in `add-expense-sheet.tsx`), so it has to be applied per-field.
 
 ### Path alias
 
