@@ -105,12 +105,34 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   async function handleSignIn() {
     setSignInError(false);
     setSigningIn(true);
+    let settled = false;
+
+    // Mobile browsers often can't detect a closed popup reliably, and
+    // Firebase's own internal detection can be slow even when it works
+    // (confirmed: our own check below beat it in testing). The window
+    // regaining focus means the popup closed or finished — react to that
+    // directly. A real success also triggers this (the popup closes
+    // itself), hence the grace period rather than an instant failure.
+    function handleFocus() {
+      if (settled) return;
+      setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          setSigningIn(false);
+          setSignInError(true);
+        }
+      }, 3000);
+    }
+    window.addEventListener("focus", handleFocus);
+
     try {
       await signInWithGoogle();
     } catch {
       setSignInError(true);
     } finally {
+      settled = true;
       setSigningIn(false);
+      window.removeEventListener("focus", handleFocus);
     }
   }
 

@@ -9,8 +9,7 @@ import {
 } from "react";
 import {
   onAuthStateChanged,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   signOut,
   GoogleAuthProvider,
   type User,
@@ -36,12 +35,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Surface unexpected errors from a redirect round-trip in the console;
-    // onAuthStateChanged below is what actually picks up the signed-in user.
-    getRedirectResult(auth).catch((err) => {
-      console.error(err);
-    });
-
     return onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
@@ -49,7 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function signInWithGoogle() {
-    await signInWithRedirect(auth, googleProvider);
+    const result = await signInWithPopup(auth, googleProvider);
+    setUser(result.user);
   }
 
   async function logOut() {
