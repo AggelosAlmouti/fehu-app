@@ -37,6 +37,14 @@
   }
 }
 
+html,
+body {
+  /* Stops iOS's rubber-band overscroll bounce past the top/bottom edges.
+     Doesn't affect normal scrolling — content that actually overflows
+     (e.g. a long expense list) still scrolls fine. */
+  overscroll-behavior: none;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
