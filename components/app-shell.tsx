@@ -84,7 +84,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [signInError, setSignInError] = useState(false);
   const [googleScriptLoaded, setGoogleScriptLoaded] = useState(false);
   const pathname = usePathname();
-  const { user, loading, signInWithGoogleCredential, logOut } = useAuth();
+  const { user, loading, signInWithGoogleCredential, logOut, deleteAccount } =
+    useAuth();
 
   // Close the mobile drawer whenever the route changes.
   useEffect(() => {
@@ -191,17 +192,43 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  async function handleDeleteAccount() {
+    if (
+      !confirm(
+        "Delete your account and all your expenses? This can't be undone.",
+      )
+    ) {
+      return;
+    }
+    try {
+      await deleteAccount();
+    } catch {
+      alert(
+        "Couldn't delete your account. Try signing out and back in, then try again.",
+      );
+    }
+  }
+
   return (
     <div className="min-h-dvh">
       <div className="flex items-center justify-between gap-3 border-b border-border bg-card px-5 py-2.5 text-xs text-detail">
         <span>Signed in — synced across devices.</span>
-        <button
-          type="button"
-          onClick={logOut}
-          className="shrink-0 rounded-full border border-border-strong px-3 py-1 font-medium text-detail hover:text-foreground"
-        >
-          Log out
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleDeleteAccount}
+            className="shrink-0 rounded-full border border-border-strong px-3 py-1 font-medium text-danger hover:opacity-80"
+          >
+            Delete account
+          </button>
+          <button
+            type="button"
+            onClick={logOut}
+            className="shrink-0 rounded-full border border-border-strong px-3 py-1 font-medium text-detail hover:text-foreground"
+          >
+            Log out
+          </button>
+        </div>
       </div>
       <div className="md:flex">
         {/* Desktop permanent sidebar */}

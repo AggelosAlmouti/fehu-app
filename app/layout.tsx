@@ -24,6 +24,9 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "Fehu",
   },
+  icons: {
+    apple: "/icons/launchericon-192x192.png",
+  },
 };
 
 export default function RootLayout({
