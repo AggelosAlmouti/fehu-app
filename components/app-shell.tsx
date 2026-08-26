@@ -3,9 +3,35 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Script from "next/script";
 import { Menu, X } from "lucide-react";
 import { navItems } from "@/lib/nav";
 import { useAuth } from "@/lib/use-auth";
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: {
+            client_id: string;
+            auto_select?: boolean;
+            callback: (response: { credential: string }) => void;
+          }) => void;
+          renderButton: (
+            parent: HTMLElement,
+            options: {
+              theme?: string;
+              size?: string;
+              shape?: string;
+              text?: string;
+            },
+          ) => void;
+        };
+      };
+    };
+  }
+}
 
 function Wordmark({ className }: { className?: string }) {
   return (
@@ -56,9 +82,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [signInError, setSignInError] = useState(false);
-  const [signingIn, setSigningIn] = useState(false);
+  const [googleScriptLoaded, setGoogleScriptLoaded] = useState(false);
   const pathname = usePathname();
-  const { user, loading, signInWithGoogle, logOut } = useAuth();
+  const { user, loading, signInWithGoogleCredential, logOut } = useAuth();
 
   // Close the mobile drawer whenever the route changes.
   useEffect(() => {
@@ -74,7 +100,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [menuOpen]);
 
   // Track connectivity so the sign-in screen can explain why signing in
-  // isn't working, instead of a doomed-to-fail popup attempt.
+  // isn't working, instead of a doomed-to-fail attempt.
   useEffect(() => {
     setIsOnline(navigator.onLine);
     const handleOnline = () => setIsOnline(true);
@@ -96,49 +122,52 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Google Identity Services renders and manages its own button and popup
+  // lifecycle entirely — unlike Firebase's signInWithPopup, we never call
+  // window.open() or guess whether the user closed anything ourselves.
+  // (Deliberately not using GIS's One Tap prompt() flow here: it depends
+  // on FedCM, which the browser can silently suppress after a user
+  // dismisses it a few times, with no reliable way for us to detect or
+  // recover from that. This classic button+popup flow doesn't go through
+  // FedCM at all, so it isn't subject to that failure mode.)
+  useEffect(() => {
+    if (!googleScriptLoaded || loading || user || !window.google) return;
+    const buttonEl = document.getElementById("google-signin-button");
+    if (!buttonEl) return;
+    window.google.accounts.id.initialize({
+      client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
+      auto_select: false,
+      callback: async (response) => {
+        setSignInError(false);
+        try {
+          await signInWithGoogleCredential(response.credential);
+        } catch {
+          setSignInError(true);
+        }
+      },
+    });
+    window.google.accounts.id.renderButton(buttonEl, {
+      theme: "filled_black",
+      size: "large",
+      shape: "pill",
+      text: "signin_with",
+    });
+  }, [googleScriptLoaded, loading, user, signInWithGoogleCredential]);
+
   // Avoid flashing the sign-in screen while Firebase is still checking for
   // an existing session.
   if (loading) {
     return <div className="min-h-dvh" />;
   }
 
-  async function handleSignIn() {
-    setSignInError(false);
-    setSigningIn(true);
-    let settled = false;
-
-    // Mobile browsers often can't detect a closed popup reliably, and
-    // Firebase's own internal detection can be slow even when it works
-    // (confirmed: our own check below beat it in testing). The window
-    // regaining focus means the popup closed or finished — react to that
-    // directly. A real success also triggers this (the popup closes
-    // itself), hence the grace period rather than an instant failure.
-    function handleFocus() {
-      if (settled) return;
-      setTimeout(() => {
-        if (!settled) {
-          settled = true;
-          setSigningIn(false);
-          setSignInError(true);
-        }
-      }, 3000);
-    }
-    window.addEventListener("focus", handleFocus);
-
-    try {
-      await signInWithGoogle();
-    } catch {
-      setSignInError(true);
-    } finally {
-      settled = true;
-      setSigningIn(false);
-      window.removeEventListener("focus", handleFocus);
-    }
-  }
-
   if (!user) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-6 px-5 text-center">
+        <Script
+          src="https://accounts.google.com/gsi/client"
+          strategy="afterInteractive"
+          onLoad={() => setGoogleScriptLoaded(true)}
+        />
         <Wordmark />
         {isOnline ? (
           <>
@@ -146,14 +175,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               Sign in with Google to track your expenses and keep them synced
               across devices.
             </p>
-            <button
-              type="button"
-              onClick={handleSignIn}
-              disabled={signingIn}
-              className="rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-background disabled:opacity-60"
-            >
-              {signingIn ? "Signing in…" : "Sign in with Google"}
-            </button>
+            <div id="google-signin-button" />
             {signInError && (
               <p className="max-w-xs text-sm text-danger">
                 Sign in failed. Check your connection and try again.

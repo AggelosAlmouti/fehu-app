@@ -9,22 +9,17 @@ import {
 } from "react";
 import {
   onAuthStateChanged,
-  signInWithPopup,
+  signInWithCredential,
   signOut,
   GoogleAuthProvider,
   type User,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
-const googleProvider = new GoogleAuthProvider();
-// Always show the account chooser, rather than silently reusing whatever
-// Google session already exists in the browser.
-googleProvider.setCustomParameters({ prompt: "select_account" });
-
 type AuthContextValue = {
   user: User | null;
   loading: boolean;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogleCredential: (idToken: string) => Promise<void>;
   logOut: () => Promise<void>;
 };
 
@@ -41,8 +36,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  async function signInWithGoogle() {
-    const result = await signInWithPopup(auth, googleProvider);
+  async function signInWithGoogleCredential(idToken: string) {
+    const credential = GoogleAuthProvider.credential(idToken);
+    const result = await signInWithCredential(auth, credential);
     setUser(result.user);
   }
 
@@ -51,7 +47,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithGoogle, logOut }}>
+    <AuthContext.Provider
+      value={{ user, loading, signInWithGoogleCredential, logOut }}
+    >
       {children}
     </AuthContext.Provider>
   );
