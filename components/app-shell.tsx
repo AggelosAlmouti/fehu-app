@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Script from "next/script";
-import { Menu, X } from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
 import { navItems } from "@/lib/nav";
 import { useAuth } from "@/lib/use-auth";
 
@@ -84,8 +84,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [signInError, setSignInError] = useState(false);
   const [googleScriptLoaded, setGoogleScriptLoaded] = useState(false);
   const pathname = usePathname();
-  const { user, loading, signInWithGoogleCredential, logOut, deleteAccount } =
-    useAuth();
+  const { user, loading, signInWithGoogleCredential, logOut } = useAuth();
 
   // Close the mobile drawer whenever the route changes.
   useEffect(() => {
@@ -192,63 +191,37 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  async function handleDeleteAccount() {
-    if (
-      !confirm(
-        "Delete your account and all your expenses? This can't be undone.",
-      )
-    ) {
-      return;
-    }
-    try {
-      await deleteAccount();
-    } catch {
-      alert(
-        "Couldn't delete your account. Try signing out and back in, then try again.",
-      );
-    }
-  }
-
   return (
     <div className="min-h-dvh">
-      <div className="flex items-center justify-between gap-3 border-b border-border bg-card px-5 py-2.5 text-xs text-detail">
-        <span>Signed in — synced across devices.</span>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleDeleteAccount}
-            className="shrink-0 rounded-full border border-border-strong px-3 py-1 font-medium text-danger hover:opacity-80"
-          >
-            Delete account
-          </button>
-          <button
-            type="button"
-            onClick={logOut}
-            className="shrink-0 rounded-full border border-border-strong px-3 py-1 font-medium text-detail hover:text-foreground"
-          >
-            Log out
-          </button>
-        </div>
-      </div>
       <div className="md:flex">
         {/* Desktop permanent sidebar */}
         <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-border px-4 py-6 md:flex">
           <Wordmark className="mb-8 px-3" />
           <NavLinks />
+          <div className="mt-auto border-t border-border pt-3">
+            <button
+              type="button"
+              onClick={logOut}
+              className="flex w-full items-center gap-3 rounded-[var(--radius-card)] px-3 py-2.5 text-sm text-detail transition-colors hover:bg-card/60 hover:text-foreground"
+            >
+              <LogOut className="size-[18px] shrink-0" aria-hidden="true" />
+              Log out
+            </button>
+          </div>
         </aside>
 
         {/* Mobile top bar with burger */}
         <header className="flex items-center justify-between px-5 pt-5 md:hidden">
-          <Wordmark />
           <button
             type="button"
             onClick={() => setMenuOpen(true)}
             aria-label="Open menu"
             aria-expanded={menuOpen}
-            className="-mr-2 flex size-10 items-center justify-center rounded-full text-detail transition-colors hover:text-foreground"
+            className="-ml-2 flex size-10 items-center justify-center rounded-full text-detail transition-colors hover:text-foreground"
           >
             <Menu className="size-[22px]" aria-hidden="true" />
           </button>
+          <Wordmark />
         </header>
 
         {/* Mobile drawer */}
@@ -260,9 +233,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               onClick={() => setMenuOpen(false)}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             />
-            <div className="fehu-slide-in absolute right-0 top-0 flex h-full w-72 max-w-[80%] flex-col border-l border-border bg-background px-4 py-6 shadow-2xl">
+            <div className="fehu-slide-in absolute left-0 top-0 flex h-full w-72 max-w-[80%] flex-col border-r border-border bg-background px-4 py-6 shadow-2xl">
               <div className="mb-8 flex items-center justify-between px-3">
-                <Wordmark />
                 <button
                   type="button"
                   onClick={() => setMenuOpen(false)}
@@ -271,8 +243,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 >
                   <X className="size-5" aria-hidden="true" />
                 </button>
+                <Wordmark />
               </div>
               <NavLinks onNavigate={() => setMenuOpen(false)} />
+              <div className="mt-auto border-t border-border pt-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    logOut();
+                  }}
+                  className="flex w-full items-center gap-3 rounded-[var(--radius-card)] px-3 py-2.5 text-sm text-detail transition-colors hover:bg-card/60 hover:text-foreground"
+                >
+                  <LogOut className="size-[18px] shrink-0" aria-hidden="true" />
+                  Log out
+                </button>
+              </div>
             </div>
           </div>
         )}
