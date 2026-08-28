@@ -1,60 +1,34 @@
-import {
-  Coffee,
-  Bus,
-  FileText,
-  ShoppingBag,
-  Home,
-  Film,
-  HeartPulse,
-  MoreHorizontal,
-  type LucideIcon,
-} from "lucide-react";
+import { currencyMap, DEFAULT_CURRENCY, type CurrencyCode } from "@/lib/currencies";
 
-export type CategoryId =
-  | "food"
-  | "transit"
-  | "bills"
-  | "shopping"
-  | "home"
-  | "fun"
-  | "health"
-  | "other";
+export type BudgetCadence = "monthly" | "one-time";
 
-export type Category = {
-  id: CategoryId;
-  label: string;
-  icon: LucideIcon;
-};
-
-export const categories: Category[] = [
-  { id: "food", label: "Food", icon: Coffee },
-  { id: "transit", label: "Transit", icon: Bus },
-  { id: "bills", label: "Bills", icon: FileText },
-  { id: "shopping", label: "Shopping", icon: ShoppingBag },
-  { id: "home", label: "Home", icon: Home },
-  { id: "fun", label: "Fun", icon: Film },
-  { id: "health", label: "Health", icon: HeartPulse },
-  { id: "other", label: "Other", icon: MoreHorizontal },
-];
-
-export const categoryMap: Record<CategoryId, Category> = categories.reduce(
-  (acc, c) => {
-    acc[c.id] = c;
-    return acc;
-  },
-  {} as Record<CategoryId, Category>,
-);
-
-export type Expense = {
+// A budget the user set up — not tied to a fixed category list.
+export type Budget = {
   id: string;
-  title: string;
-  category: CategoryId;
+  name: string;
   amount: number;
-  /** ISO date string */
-  date: string;
-  /** optional upcoming due note, e.g. "due in 2 days" */
-  due?: string;
+  cadence: BudgetCadence;
 };
+
+// `amount` is always positive; `type` carries the sign.
+export type Transaction =
+  | {
+      id: string;
+      type: "expense";
+      title: string;
+      amount: number;
+      budgetId?: string;
+      /** ISO date string */
+      date: string;
+    }
+  | {
+      id: string;
+      type: "income";
+      title: string;
+      amount: number;
+      /** ISO date string */
+      date: string;
+    };
 
 export function currentMonthLabel(): string {
   return new Date().toLocaleDateString("en-IE", {
@@ -63,13 +37,19 @@ export function currentMonthLabel(): string {
   });
 }
 
-export const monthlyBudget = 2000;
-
-export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-IE", {
-    style: "currency",
-    currency: "EUR",
-  }).format(value);
+export function formatCurrency(
+  value: number,
+  currency: CurrencyCode = DEFAULT_CURRENCY,
+): string {
+  // Symbol is always the hardcoded one, not Intl's (ICU renders CHF as
+  // literal "CHF"). "Other"'s blank symbol prints a bare number.
+  const sign = value < 0 ? "-" : "";
+  const number = new Intl.NumberFormat("en-IE", {
+    style: "decimal",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Math.abs(value));
+  return `${sign}${currencyMap[currency].symbol}${number}`;
 }
 
 export function relativeDay(iso: string): string {

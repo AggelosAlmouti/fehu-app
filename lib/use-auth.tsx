@@ -51,14 +51,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function deleteAccount() {
     if (!auth.currentUser) return;
-    // Delete Firestore data first, while still authenticated — Firestore's
-    // security rules require request.auth.uid == userId, so this has to
-    // happen before the account itself is gone.
-    const expensesSnapshot = await getDocs(
-      collection(db, "users", auth.currentUser.uid, "expenses"),
-    );
+    // Must delete Firestore data while still authenticated.
+    const uid = auth.currentUser.uid;
+    const [transactionsSnapshot, budgetsSnapshot] = await Promise.all([
+      getDocs(collection(db, "users", uid, "transactions")),
+      getDocs(collection(db, "users", uid, "budgets")),
+    ]);
     const batch = writeBatch(db);
-    expensesSnapshot.forEach((doc) => batch.delete(doc.ref));
+    transactionsSnapshot.forEach((doc) => batch.delete(doc.ref));
+    budgetsSnapshot.forEach((doc) => batch.delete(doc.ref));
     await batch.commit();
     await deleteUser(auth.currentUser);
   }

@@ -99,8 +99,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, [menuOpen]);
 
-  // Track connectivity so the sign-in screen can explain why signing in
-  // isn't working, instead of a doomed-to-fail attempt.
+  // Lets the sign-in screen explain why, instead of a doomed attempt.
   useEffect(() => {
     setIsOnline(navigator.onLine);
     const handleOnline = () => setIsOnline(true);
@@ -113,23 +112,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Register the offline service worker. Only in production: in dev, it
-  // would cache your own code and keep serving stale versions after every
-  // change, which is more confusing than helpful while iterating.
+  // Production only — in dev it'd cache and serve stale code.
   useEffect(() => {
     if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator) {
       navigator.serviceWorker.register("/service-worker.js");
     }
   }, []);
 
-  // Google Identity Services renders and manages its own button and popup
-  // lifecycle entirely — unlike Firebase's signInWithPopup, we never call
-  // window.open() or guess whether the user closed anything ourselves.
-  // (Deliberately not using GIS's One Tap prompt() flow here: it depends
-  // on FedCM, which the browser can silently suppress after a user
-  // dismisses it a few times, with no reliable way for us to detect or
-  // recover from that. This classic button+popup flow doesn't go through
-  // FedCM at all, so it isn't subject to that failure mode.)
+  // GIS renderButton(), not One Tap prompt() — prompt() depends on FedCM,
+  // which browsers can silently suppress with no way to detect it.
   useEffect(() => {
     if (!googleScriptLoaded || loading || user || !window.google) return;
     const buttonEl = document.getElementById("google-signin-button");
@@ -154,8 +145,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     });
   }, [googleScriptLoaded, loading, user, signInWithGoogleCredential]);
 
-  // Avoid flashing the sign-in screen while Firebase is still checking for
-  // an existing session.
+  // Avoid flashing sign-in while Firebase checks for a session.
   if (loading) {
     return <div className="min-h-dvh" />;
   }
@@ -199,6 +189,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Wordmark className="mb-8 px-3" />
           <NavLinks />
           <div className="mt-auto border-t border-border pt-3">
+            <div className="truncate px-3 pb-2 text-xs text-muted">
+              {user?.email}
+            </div>
             <button
               type="button"
               onClick={logOut}
@@ -247,6 +240,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
               <NavLinks onNavigate={() => setMenuOpen(false)} />
               <div className="mt-auto border-t border-border pt-3">
+                <div className="truncate px-3 pb-2 text-xs text-muted">
+                  {user?.email}
+                </div>
                 <button
                   type="button"
                   onClick={() => {

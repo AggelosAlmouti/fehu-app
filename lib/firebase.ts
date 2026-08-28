@@ -15,14 +15,12 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 }
 
-// Next.js hot-reloads modules in dev, which would call initializeApp() twice
-// and crash — reuse the existing app instance if one already exists.
+// Dev hot-reload would call initializeApp() twice and crash otherwise.
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
 
 export const auth = getAuth(app)
 
-// persistentLocalCache turns on offline support: writes are cached in the
-// browser (IndexedDB) and synced to Firestore when back online.
+// Offline support: writes cache locally and sync when back online.
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager(),
