@@ -36,11 +36,14 @@ declare global {
 function Wordmark({ className }: { className?: string }) {
   return (
     <div className={className}>
+      <img
+        src="/icons/f-mark.png"
+        alt=""
+        className="mr-0.5 inline-block h-[18px] w-auto align-baseline"
+        aria-hidden="true"
+      />
       <span className="text-lg font-medium tracking-tight text-foreground">
-        fehu
-      </span>
-      <span className="ml-1 text-accent" aria-hidden="true">
-        ᚠ
+        ehu
       </span>
     </div>
   );
@@ -87,12 +90,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, loading, signInWithGoogleCredential, logOut } = useAuth();
 
-  // Close the mobile drawer whenever the route changes.
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
 
-  // Lock body scroll while the drawer is open.
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => {
@@ -100,7 +101,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, [menuOpen]);
 
-  // Lets the sign-in screen explain why, instead of a doomed attempt.
   useEffect(() => {
     setIsOnline(navigator.onLine);
     const handleOnline = () => setIsOnline(true);
@@ -146,7 +146,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     });
   }, [googleScriptLoaded, loading, user, signInWithGoogleCredential]);
 
-  // Avoid flashing sign-in while Firebase checks for a session.
   if (loading) {
     return <div className="min-h-dvh" />;
   }
@@ -185,7 +184,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh">
       <div className="md:flex">
-        {/* Desktop permanent sidebar */}
         <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-border px-4 py-6 md:flex">
           <Wordmark className="mb-8 px-3" />
           <NavLinks />
@@ -204,8 +202,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
 
-        {/* Mobile top bar with burger */}
-        <header className="flex items-center justify-between px-5 pt-5 md:hidden">
+        {/* No wordmark here — only in the drawer. */}
+        <header className="flex items-center px-5 pt-5 md:hidden">
           <button
             type="button"
             onClick={() => setMenuOpen(true)}
@@ -215,10 +213,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           >
             <Menu className="size-[22px]" aria-hidden="true" />
           </button>
-          <Wordmark />
         </header>
 
-        {/* Mobile drawer */}
         {menuOpen && (
           <div className="fixed inset-0 z-50 md:hidden">
             <button
@@ -260,7 +256,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
-        {/* Main content */}
         <main className="flex-1">{children}</main>
       </div>
     </div>

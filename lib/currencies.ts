@@ -1,7 +1,3 @@
-// Major currencies with a hardcoded symbol (Intl/ICU doesn't render a
-// clean glyph for all of them). "Other" is synthetic — blank symbol,
-// bare numbers.
-
 export type CurrencyCode = "USD" | "EUR" | "JPY" | "GBP" | "OTHER";
 
 export type CurrencyOption = {

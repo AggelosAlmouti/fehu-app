@@ -12,9 +12,6 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/use-auth";
 import { DEFAULT_CURRENCY, isCurrencyCode, type CurrencyCode } from "@/lib/currencies";
 
-// A Context, not a plain hook — same reasoning as AuthProvider: many
-// components format money, so they share one subscription.
-
 type CurrencyContextValue = {
   currency: CurrencyCode;
   setCurrency: (code: CurrencyCode) => void;

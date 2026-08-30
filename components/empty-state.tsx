@@ -1,7 +1,6 @@
 import type { LucideIcon } from "lucide-react"
 import type { ReactNode } from "react"
 
-// The shared "nothing here yet" box: card, icon, instructional text.
 export function EmptyState({
   icon: Icon,
   children,

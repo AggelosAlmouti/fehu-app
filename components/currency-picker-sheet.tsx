@@ -39,7 +39,6 @@ export function CurrencyPickerSheet({
               >
                 <span className="text-sm text-foreground">
                   {c.label}
-                  {/* "Other" renders as literal empty parens. */}
                   <span className="text-muted"> ({c.symbol})</span>
                 </span>
                 {active && (

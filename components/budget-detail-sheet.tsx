@@ -32,7 +32,6 @@ export function BudgetDetailSheet({
   if (!budget) return null;
   const sorted = [...transactions].sort((a, b) => b.date.localeCompare(a.date));
 
-  // Same spent/limit treatment as the dashboard's budget cards.
   const spent = transactions.reduce((sum, t) => sum + t.amount, 0);
   const overspent = spent > budget.amount;
   const pct = overspent ? 100 : Math.min(100, Math.round((spent / budget.amount) * 100));

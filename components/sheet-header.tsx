@@ -9,8 +9,6 @@ export function SheetHeader({
 }: {
   title: string;
   onClose: () => void;
-  /** Titles built from `${verb} ${type}` (e.g. "Add expense") need this to
-   *  capitalize the second word too. */
   capitalize?: boolean;
 }) {
   return (

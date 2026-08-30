@@ -38,11 +38,6 @@ export default function BudgetsPage() {
 
   return (
     <div className="mx-auto w-full max-w-xl px-5 pb-32 pt-6 md:pt-10">
-      <div className="mb-[18px] text-xs text-detail">Total budgeted</div>
-      <div className="mb-8 text-[34px] font-medium leading-tight tracking-tight text-foreground">
-        {formatCurrency(total, currency)}
-      </div>
-
       <div className="mb-8 flex items-center justify-between md:mb-10">
         <h1 className="text-2xl font-medium tracking-tight">Budgets</h1>
         <button
@@ -53,6 +48,11 @@ export default function BudgetsPage() {
           <Plus className="size-3.5" aria-hidden="true" />
           Add budget
         </button>
+      </div>
+
+      <div className="mb-0.5 text-xs text-detail">Total</div>
+      <div className="mb-8 text-[34px] font-medium leading-tight tracking-tight text-foreground">
+        {formatCurrency(total, currency)}
       </div>
 
       {sorted.length > 0 ? (

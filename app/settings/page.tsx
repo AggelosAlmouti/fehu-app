@@ -26,7 +26,6 @@ export default function SettingsPage() {
               Used to format amounts throughout the app.
             </div>
           </div>
-          {/* min-w matches the Delete button below; "Other" shows no fallback text. */}
           <button
             type="button"
             onClick={() => setPickerOpen(true)}

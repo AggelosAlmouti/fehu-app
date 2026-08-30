@@ -37,7 +37,6 @@ export function AddBudgetSheet({
       setName("");
       setCadence("monthly");
     }
-    // Focus the amount field after the sheet animates in.
     const t = setTimeout(() => amountRef.current?.focus(), 120);
     return () => clearTimeout(t);
   }, [open, editing]);

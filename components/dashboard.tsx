@@ -61,7 +61,8 @@ export function Dashboard() {
   const net = earned - spent;
 
   const expenses = useMemo(
-    () => transactions.filter((t): t is ExpenseTransaction => t.type === "expense"),
+    () =>
+      transactions.filter((t): t is ExpenseTransaction => t.type === "expense"),
     [transactions],
   );
   const monthlyExpenses = useMemo(
@@ -69,11 +70,11 @@ export function Dashboard() {
     [monthly],
   );
 
-  // Monthly resets each month; one-time is a running total.
   function sumByBudget(list: ExpenseTransaction[]): Map<string, number> {
     const map = new Map<string, number>();
     list.forEach((t) => {
-      if (t.budgetId) map.set(t.budgetId, (map.get(t.budgetId) ?? 0) + t.amount);
+      if (t.budgetId)
+        map.set(t.budgetId, (map.get(t.budgetId) ?? 0) + t.amount);
     });
     return map;
   }
@@ -92,9 +93,10 @@ export function Dashboard() {
         .map((b) => ({
           budget: b,
           spent:
-            (b.cadence === "monthly" ? spentByBudget.monthly : spentByBudget.allTime).get(
-              b.id,
-            ) ?? 0,
+            (b.cadence === "monthly"
+              ? spentByBudget.monthly
+              : spentByBudget.allTime
+            ).get(b.id) ?? 0,
         })),
     [budgets, spentByBudget],
   );
@@ -102,7 +104,8 @@ export function Dashboard() {
   const openBudget = budgets.find((b) => b.id === openBudgetId) ?? null;
   const openBudgetTransactions = useMemo(() => {
     if (!openBudget) return [];
-    const source = openBudget.cadence === "monthly" ? monthlyExpenses : expenses;
+    const source =
+      openBudget.cadence === "monthly" ? monthlyExpenses : expenses;
     return source.filter((t) => t.budgetId === openBudget.id);
   }, [openBudget, monthlyExpenses, expenses]);
 
@@ -118,26 +121,42 @@ export function Dashboard() {
 
   return (
     <div className="mx-auto w-full max-w-xl px-5 pb-32 pt-6 md:pt-10">
-      <div className="mb-[18px] text-sm text-detail">{currentMonthLabel()}</div>
+      <div className="mb-[18px] flex items-center justify-between">
+        <span className="text-sm text-detail">Welcome back!</span>
+        <button
+          type="button"
+          onClick={openAddSheet}
+          aria-label="Add transaction"
+          className="hidden size-11 shrink-0 items-center justify-center rounded-full bg-accent text-background transition-opacity hover:opacity-90 md:flex"
+        >
+          <Plus className="size-5" aria-hidden="true" />
+        </button>
+      </div>
 
-      <div className="mb-[22px] flex items-end gap-8">
+      <div className="mb-[22px] flex items-end justify-between">
         <div>
           <div className="mb-0.5 text-xs text-detail">Net</div>
           <div className="text-[34px] font-medium leading-tight tracking-tight text-foreground">
             {formatCurrency(net, currency)}
           </div>
         </div>
-        <div>
-          <div className="mb-0.5 text-[11px] text-muted">Spent</div>
-          <div className="text-[13px] text-foreground">{formatCurrency(spent, currency)}</div>
-        </div>
-        <div>
-          <div className="mb-0.5 text-[11px] text-muted">Earned</div>
-          <div className="text-[13px] text-foreground">{formatCurrency(earned, currency)}</div>
+        <div className="flex items-end gap-5">
+          <div>
+            <div className="mb-0.5 text-[11px] text-muted">Spent</div>
+            <div className="text-[13px] text-foreground">
+              {formatCurrency(spent, currency)}
+            </div>
+          </div>
+          <div>
+            <div className="mb-0.5 text-[11px] text-muted">Earned</div>
+            <div className="text-[13px] text-foreground">
+              {formatCurrency(earned, currency)}
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="mb-2.5 text-xs text-detail">Budgets</div>
+      <div className="mb-2.5 text-xs text-detail">{currentMonthLabel()}</div>
 
       {budgetCards.length > 0 ? (
         <div className="flex flex-col gap-2">
@@ -163,12 +182,11 @@ export function Dashboard() {
         </EmptyState>
       )}
 
-      {/* Floating add button (thumb-reachable) */}
       <button
         type="button"
         onClick={openAddSheet}
         aria-label="Add transaction"
-        className="fixed bottom-6 right-6 z-40 flex size-14 items-center justify-center rounded-full bg-accent text-background shadow-lg shadow-black/40 transition-transform active:scale-95 md:size-14"
+        className="fixed bottom-6 right-6 z-40 flex size-14 items-center justify-center rounded-full bg-accent text-background shadow-lg shadow-black/40 transition-transform active:scale-95 md:hidden"
       >
         <Plus className="size-6" aria-hidden="true" />
       </button>
@@ -215,12 +233,13 @@ function BudgetCard({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-[10px] border-[0.5px] border-border px-3 py-2.5 text-left"
+      className="rounded-[10px] border-[0.5px] border-border px-3 py-3.5 text-left"
     >
       <div className="mb-1.5 flex items-center justify-between">
         <span className="text-[13px] text-foreground">{budget.name}</span>
         <span className="text-[11px] text-muted">
-          {formatCurrency(spent, currency)} / {formatCurrency(budget.amount, currency)}
+          {formatCurrency(spent, currency)} /{" "}
+          {formatCurrency(budget.amount, currency)}
         </span>
       </div>
       <div className="h-[3px] overflow-hidden rounded-full bg-border">

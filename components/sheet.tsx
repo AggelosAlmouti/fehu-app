@@ -2,11 +2,7 @@
 
 import { useEffect, useId, type ReactNode } from "react";
 
-// The app's one modal/bottom-sheet shell — every dialog renders through
-// this instead of hand-rolling its own overlay and close behavior.
-
-// Open sheet ids, topmost last — lets Escape close only the front sheet
-// when stacked, same as a backdrop click already does.
+// Open sheet ids, topmost last — lets Escape close only the front sheet.
 const openStack: string[] = [];
 
 export function Sheet({

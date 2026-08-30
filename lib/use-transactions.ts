@@ -16,8 +16,14 @@ import { db } from "@/lib/firebase";
 import type { Transaction } from "@/lib/data";
 
 export type NewTransaction =
-  | { type: "expense"; title: string; amount: number; budgetId?: string }
-  | { type: "income"; title: string; amount: number };
+  | {
+      type: "expense";
+      title: string;
+      amount: number;
+      date: string;
+      budgetId?: string;
+    }
+  | { type: "income"; title: string; amount: number; date: string };
 
 const COLLECTION = "transactions";
 
@@ -53,10 +59,7 @@ export function useTransactions(uid: string | undefined) {
 
   function addTransaction(next: NewTransaction) {
     if (!uid) return;
-    addDoc(collection(db, "users", uid, COLLECTION), {
-      ...next,
-      date: new Date().toISOString().slice(0, 10),
-    });
+    addDoc(collection(db, "users", uid, COLLECTION), next);
   }
 
   function updateTransaction(id: string, patch: NewTransaction) {

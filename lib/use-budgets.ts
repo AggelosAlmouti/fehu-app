@@ -59,7 +59,6 @@ export function useBudgets(uid: string | undefined) {
     updateDoc(doc(db, "users", uid, "budgets", id), patch);
   }
 
-  // Also strips budgetId off any transaction that referenced it.
   async function deleteBudget(id: string) {
     if (!uid) return;
     const orphaned = await getDocs(

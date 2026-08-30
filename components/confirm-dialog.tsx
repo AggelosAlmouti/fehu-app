@@ -2,8 +2,6 @@
 
 import { Sheet } from "@/components/sheet";
 
-// Replaces native confirm() — one component, reused wherever a
-// destructive action needs a yes/no check.
 export function ConfirmDialog({
   open,
   title,
