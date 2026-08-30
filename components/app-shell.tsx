@@ -58,6 +58,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
           <Link
             key={item.href}
             href={item.href}
+            replace
             onClick={onNavigate}
             aria-current={active ? "page" : undefined}
             className={`flex items-center gap-3 rounded-[var(--radius-card)] px-3 py-2.5 text-sm transition-colors ${

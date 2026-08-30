@@ -43,12 +43,6 @@ body {
      Doesn't affect normal scrolling — content that actually overflows
      (e.g. a long expense list) still scrolls fine. */
   overscroll-behavior: none;
-  /* Restricts default touch gestures to vertical panning only, so a
-     horizontal swipe isn't interpreted as the browser's edge-swipe-back
-     navigation gesture between nav pages. overscroll-behavior alone
-     doesn't cover this on iOS Safari — it only governs scroll chaining
-     and bounce, not that gesture. */
-  touch-action: pan-y;
 }
 
 body {

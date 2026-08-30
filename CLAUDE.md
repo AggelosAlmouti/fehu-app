@@ -18,6 +18,8 @@ Fehu is a personal finance tracker PWA: Next.js 16 (App Router), React 19, TypeS
 
 Flat structure under `app/` (no route groups). `app/page.tsx` renders the `Dashboard` at `/`, `app/budgets` is a real screen (see Budgets below), and `app/settings` has a real (if minimal) screen — see Auth model below. `app/insights` is still a one-line page rendering `components/page-placeholder.tsx` (icon + description empty state) — no real functionality yet. There is no Categories page or nav item — see Data layer below for why. `app/layout.tsx` wraps every page in `AuthProvider` (from `lib/use-auth.tsx`) and then `AppShell` (from `components/app-shell.tsx`, sidebar on desktop / burger-drawer on mobile, both anchored **left** — the mobile burger button lives at the top-left of the header to match, and the drawer slides in from the left), with nav items sourced from `lib/nav.ts`.
 
+Nav `<Link>`s use `replace` (not the default push) — this is a tab-based nav, sibling tabs shouldn't have a browser back/forward relationship the way drill-down pages would. Without it, every tab switch pushed a new history entry, and on iOS this meant the edge-swipe-back gesture would navigate between tabs (with a native swipe-preview flash of whatever state — e.g. the mobile drawer being open — was on the page just before that history entry was recorded, since Safari snapshots for the preview). A CSS-only attempt at this (`touch-action: pan-y`) was tried first and didn't work — the gesture was legitimate, since a real history entry existed for it to go back to; `replace` removes the entry instead of trying to suppress the gesture.
+
 ### Auth model (`lib/use-auth.tsx`)
 
 Auth state is a React Context (`AuthProvider`/`useAuth`), not a plain hook — this is deliberate: more than one component (the app shell, the dashboard) needs the same live auth state, and independent `onAuthStateChanged` listeners per hook call risk racing into separate sessions.
@@ -82,8 +84,6 @@ Where budgets are actually created/edited/deleted (the dashboard only reads and 
 Tailwind v4 theme tokens are defined in `app/globals.css` via CSS variables + `@theme inline`: `background`, `foreground`, `accent`, `detail`, `muted`, `border`, `border-strong`, `card`, `surface`, `radius-card`. Use these token names (`bg-card`, `text-detail`, etc.) rather than raw hex values or ad hoc colors.
 
 Any `<input>`/`<textarea>`/`<select>` needs `text-base` (16px) or larger — iOS Safari auto-zooms the page on focus if a form field's font size is under 16px. There's no global guard against this (a blanket CSS rule would also shrink the intentionally-large amount input in `add-transaction-sheet.tsx`), so it has to be applied per-field.
-
-`html, body` also set `touch-action: pan-y` (alongside the existing `overscroll-behavior: none` from the vertical-bounce fix) to stop a horizontal swipe from triggering the browser's edge-swipe-back gesture between nav pages — `overscroll-behavior` alone doesn't cover this on iOS Safari, it only governs scroll chaining/bounce, not that gesture.
 
 ### Path alias
 
