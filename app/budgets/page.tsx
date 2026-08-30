@@ -19,6 +19,7 @@ export default function BudgetsPage() {
   const [pendingDelete, setPendingDelete] = useState<Budget | null>(null);
 
   const sorted = [...budgets].sort((a, b) => b.amount - a.amount);
+  const total = budgets.reduce((sum, b) => sum + b.amount, 0);
 
   function openAdd() {
     setEditing(null);
@@ -37,6 +38,11 @@ export default function BudgetsPage() {
 
   return (
     <div className="mx-auto w-full max-w-xl px-5 pb-32 pt-6 md:pt-10">
+      <div className="mb-[18px] text-xs text-detail">Total budgeted</div>
+      <div className="mb-8 text-[34px] font-medium leading-tight tracking-tight text-foreground">
+        {formatCurrency(total, currency)}
+      </div>
+
       <div className="mb-8 flex items-center justify-between md:mb-10">
         <h1 className="text-2xl font-medium tracking-tight">Budgets</h1>
         <button

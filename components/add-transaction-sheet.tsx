@@ -18,7 +18,7 @@ export function AddTransactionSheet({
   open: boolean;
   /** Transaction being edited, or null when adding a new one. */
   editing: Transaction | null;
-  /** Available budgets — shown as pills to tag an expense against. */
+  /** Available budgets — shown as pills; required for an expense. */
   budgets: Budget[];
   onClose: () => void;
   onAdd: (transaction: NewTransaction) => void;
@@ -50,7 +50,10 @@ export function AddTransactionSheet({
 
   const parsed = Number.parseFloat(amount);
   const valid =
-    title.trim().length > 0 && Number.isFinite(parsed) && parsed > 0;
+    title.trim().length > 0 &&
+    Number.isFinite(parsed) &&
+    parsed > 0 &&
+    (txType !== "expense" || budgetId !== undefined);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -125,31 +128,35 @@ export function AddTransactionSheet({
           />
         </div>
 
-        {txType === "expense" && budgets.length > 0 && (
+        {txType === "expense" && (
           <div>
             <span className="mb-2 block text-xs text-detail">Budget</span>
-            <div className="flex flex-wrap gap-2">
-              {budgets.map((b) => {
-                const active = b.id === budgetId
-                return (
-                  <button
-                    key={b.id}
-                    type="button"
-                    onClick={() =>
-                      setBudgetId(active ? undefined : b.id)
-                    }
-                    aria-pressed={active}
-                    className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
-                      active
-                        ? "border-accent bg-accent text-background"
-                        : "border-border-strong text-detail hover:text-foreground"
-                    }`}
-                  >
-                    {b.name}
-                  </button>
-                )
-              })}
-            </div>
+            {budgets.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {budgets.map((b) => {
+                  const active = b.id === budgetId
+                  return (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => setBudgetId(b.id)}
+                      aria-pressed={active}
+                      className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
+                        active
+                          ? "border-accent bg-accent text-background"
+                          : "border-border-strong text-detail hover:text-foreground"
+                      }`}
+                    >
+                      {b.name}
+                    </button>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="text-xs text-muted">
+                Add a budget first to log an expense.
+              </p>
+            )}
           </div>
         )}
 
