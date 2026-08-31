@@ -91,6 +91,114 @@ export function formatCurrency(
   return `${sign}${symbol}${number}`;
 }
 
+function periodStartMonth(transactions: Transaction[], months: number | null): Date | null {
+  if (transactions.length === 0) return null;
+  const now = new Date();
+  const end = new Date(now.getFullYear(), now.getMonth(), 1);
+  if (months === null) {
+    const earliest = transactions.reduce(
+      (min, t) => (t.date < min ? t.date : min),
+      transactions[0].date,
+    );
+    const [y, m] = earliest.split("-").map(Number);
+    return new Date(y, m - 1, 1);
+  }
+  return new Date(end.getFullYear(), end.getMonth() - (months - 1), 1);
+}
+
+export type MonthlyTotal = {
+  key: string;
+  label: string;
+  spent: number;
+  earned: number;
+};
+
+export function monthlyTotals(
+  transactions: Transaction[],
+  months: number | null,
+): MonthlyTotal[] {
+  const start = periodStartMonth(transactions, months);
+  if (!start) return [];
+  const now = new Date();
+  const end = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const buckets = new Map<string, MonthlyTotal>();
+  for (const d = new Date(start); d <= end; d.setMonth(d.getMonth() + 1)) {
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    buckets.set(key, {
+      key,
+      label: d.toLocaleDateString("en-IE", { month: "short" }),
+      spent: 0,
+      earned: 0,
+    });
+  }
+  for (const t of transactions) {
+    const bucket = buckets.get(t.date.slice(0, 7));
+    if (!bucket) continue;
+    if (t.type === "expense") bucket.spent += t.amount;
+    else bucket.earned += t.amount;
+  }
+  return [...buckets.values()];
+}
+
+export function isThisMonth(iso: string): boolean {
+  const now = new Date();
+  const d = new Date(iso + "T00:00:00");
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+}
+
+type ExpenseTransaction = Extract<Transaction, { type: "expense" }>;
+
+export type BudgetSpending = {
+  budget: Budget;
+  spent: number;
+  transactions: ExpenseTransaction[];
+};
+
+export function budgetSpending(
+  budgets: Budget[],
+  transactions: Transaction[],
+): BudgetSpending[] {
+  const expenses = transactions.filter(
+    (t): t is ExpenseTransaction => t.type === "expense",
+  );
+  return budgets.map((budget) => {
+    const matching = expenses.filter((e) => e.budgetId === budget.id);
+    const scoped =
+      budget.cadence === "monthly" ? matching.filter((e) => isThisMonth(e.date)) : matching;
+    return {
+      budget,
+      spent: scoped.reduce((sum, e) => sum + e.amount, 0),
+      transactions: scoped,
+    };
+  });
+}
+
+export function budgetSpendingInPeriod(
+  budgets: Budget[],
+  transactions: Transaction[],
+  months: number | null,
+): BudgetSpending[] {
+  const start = periodStartMonth(transactions, months);
+  if (!start) return [];
+  const startISO = toLocalISODate(start);
+  const endISO = todayISO();
+  const expenses = transactions.filter(
+    (t): t is ExpenseTransaction =>
+      t.type === "expense" && t.date >= startISO && t.date <= endISO,
+  );
+  return budgets
+    .map((budget) => {
+      const matching = expenses.filter((e) => e.budgetId === budget.id);
+      return {
+        budget,
+        spent: matching.reduce((sum, e) => sum + e.amount, 0),
+        transactions: matching,
+      };
+    })
+    .filter((s) => s.transactions.length > 0);
+}
+
 export function relativeDay(iso: string): string {
   const today = new Date();
   today.setHours(0, 0, 0, 0);

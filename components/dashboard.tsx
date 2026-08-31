@@ -6,6 +6,8 @@ import { Plus, Wallet } from "lucide-react";
 import {
   formatCurrency,
   currentMonthLabel,
+  isThisMonth,
+  budgetSpending,
   type Budget,
   type Transaction,
 } from "@/lib/data";
@@ -16,16 +18,6 @@ import { useAuth } from "@/lib/use-auth";
 import { useCurrency } from "@/lib/use-currency";
 import { useTransactions } from "@/lib/use-transactions";
 import { useBudgets } from "@/lib/use-budgets";
-
-type ExpenseTransaction = Extract<Transaction, { type: "expense" }>;
-
-function isThisMonth(iso: string): boolean {
-  const now = new Date();
-  const d = new Date(iso + "T00:00:00");
-  return (
-    d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
-  );
-}
 
 export function Dashboard() {
   const { user } = useAuth();
@@ -60,54 +52,17 @@ export function Dashboard() {
   );
   const net = earned - spent;
 
-  const expenses = useMemo(
-    () =>
-      transactions.filter((t): t is ExpenseTransaction => t.type === "expense"),
-    [transactions],
-  );
-  const monthlyExpenses = useMemo(
-    () => monthly.filter((t): t is ExpenseTransaction => t.type === "expense"),
-    [monthly],
-  );
-
-  function sumByBudget(list: ExpenseTransaction[]): Map<string, number> {
-    const map = new Map<string, number>();
-    list.forEach((t) => {
-      if (t.budgetId)
-        map.set(t.budgetId, (map.get(t.budgetId) ?? 0) + t.amount);
-    });
-    return map;
-  }
-  const spentByBudget = useMemo(
-    () => ({
-      monthly: sumByBudget(monthlyExpenses),
-      allTime: sumByBudget(expenses),
-    }),
-    [monthlyExpenses, expenses],
-  );
-
+  const spending = useMemo(() => budgetSpending(budgets, transactions), [budgets, transactions]);
   const budgetCards = useMemo(
-    () =>
-      [...budgets]
-        .sort((a, b) => b.amount - a.amount)
-        .map((b) => ({
-          budget: b,
-          spent:
-            (b.cadence === "monthly"
-              ? spentByBudget.monthly
-              : spentByBudget.allTime
-            ).get(b.id) ?? 0,
-        })),
-    [budgets, spentByBudget],
+    () => [...spending].sort((a, b) => b.budget.amount - a.budget.amount),
+    [spending],
   );
 
   const openBudget = budgets.find((b) => b.id === openBudgetId) ?? null;
-  const openBudgetTransactions = useMemo(() => {
-    if (!openBudget) return [];
-    const source =
-      openBudget.cadence === "monthly" ? monthlyExpenses : expenses;
-    return source.filter((t) => t.budgetId === openBudget.id);
-  }, [openBudget, monthlyExpenses, expenses]);
+  const openBudgetTransactions = useMemo(
+    () => spending.find((s) => s.budget.id === openBudgetId)?.transactions ?? [],
+    [spending, openBudgetId],
+  );
 
   function openAddSheet() {
     setEditingTransaction(null);
