@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Fehu",
     short_name: "Fehu",
     description: "Personal finance tracker",
-    start_url: "/",
+    start_url: "/dashboard",
     display: "standalone",
     background_color: "#141414",
     theme_color: "#141414",

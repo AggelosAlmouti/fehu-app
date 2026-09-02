@@ -1,9 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
-import { AppShell } from "@/components/app-shell";
 import { AuthProvider } from "@/lib/use-auth";
-import { CurrencyProvider } from "@/lib/use-currency";
+import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,11 +37,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} bg-background`}>
       <body>
-        <AuthProvider>
-          <CurrencyProvider>
-            <AppShell>{children}</AppShell>
-          </CurrencyProvider>
-        </AuthProvider>
+        <ServiceWorkerRegistration />
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

@@ -7,6 +7,7 @@ import Script from "next/script";
 import { LogOut, Menu, X } from "lucide-react";
 import { navItems } from "@/lib/nav";
 import { useAuth } from "@/lib/use-auth";
+import { Wordmark } from "@/components/wordmark";
 
 declare global {
   interface Window {
@@ -33,29 +34,12 @@ declare global {
   }
 }
 
-function Wordmark({ className }: { className?: string }) {
-  return (
-    <div className={className}>
-      <img
-        src="/icons/f-mark.png"
-        alt=""
-        className="mr-0.5 inline-block h-[18px] w-auto align-baseline"
-        aria-hidden="true"
-      />
-      <span className="text-lg font-medium tracking-tight text-foreground">
-        ehu
-      </span>
-    </div>
-  );
-}
-
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   return (
     <nav className="flex flex-col gap-1" aria-label="Primary">
       {navItems.map((item) => {
-        const active =
-          item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+        const active = pathname.startsWith(item.href);
         const Icon = item.icon;
         return (
           <Link
@@ -111,13 +95,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
-  }, []);
-
-  // Production only — in dev it'd cache and serve stale code.
-  useEffect(() => {
-    if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/service-worker.js");
-    }
   }, []);
 
   // GIS renderButton(), not One Tap prompt() — prompt() depends on FedCM,
