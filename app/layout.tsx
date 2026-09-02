@@ -18,7 +18,6 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "Fehu",
   description: "Personal finance tracker",
-  manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

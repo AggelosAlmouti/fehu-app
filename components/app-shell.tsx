@@ -8,6 +8,7 @@ import { LogOut, Menu, X } from "lucide-react";
 import { navItems } from "@/lib/nav";
 import { useAuth } from "@/lib/use-auth";
 import { Wordmark } from "@/components/wordmark";
+import { InstallSection } from "@/components/install-section";
 
 declare global {
   interface Window {
@@ -97,6 +98,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Lets a second mount pick up a script that already loaded once (see CLAUDE.md).
+  useEffect(() => {
+    if (window.google) setGoogleScriptLoaded(true);
+  }, []);
+
   // GIS renderButton(), not One Tap prompt() — prompt() depends on FedCM,
   // which browsers can silently suppress with no way to detect it.
   useEffect(() => {
@@ -148,6 +154,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 Sign in failed. Check your connection and try again.
               </p>
             )}
+            <InstallSection />
           </>
         ) : (
           <p className="max-w-xs text-sm text-muted">
