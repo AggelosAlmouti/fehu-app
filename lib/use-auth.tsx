@@ -17,6 +17,7 @@ import {
 } from "firebase/auth";
 import { collection, getDocs, writeBatch } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+import { seedDefaultBudgets } from "@/lib/use-budgets";
 
 type AuthContextValue = {
   user: User | null;
@@ -43,6 +44,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const credential = GoogleAuthProvider.credential(idToken);
     const result = await signInWithCredential(auth, credential);
     setUser(result.user);
+    // creationTime === lastSignInTime only on the very first sign-in.
+    const { creationTime, lastSignInTime } = result.user.metadata;
+    if (creationTime === lastSignInTime) {
+      await seedDefaultBudgets(result.user.uid);
+    }
   }
 
   async function logOut() {

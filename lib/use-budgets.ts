@@ -21,7 +21,24 @@ export type NewBudget = {
   name: string;
   amount: number;
   cadence: BudgetCadence;
+  /** Only set for one-time budgets — the "YYYY-MM" month it's scoped to. */
+  month?: string;
 };
+
+export const DEFAULT_BUDGETS: NewBudget[] = [
+  { name: "Groceries", amount: 300, cadence: "monthly" },
+  { name: "Housing", amount: 800, cadence: "monthly" },
+  { name: "Transportation", amount: 100, cadence: "monthly" },
+  { name: "Coffee", amount: 30, cadence: "monthly" },
+  { name: "Eating out", amount: 100, cadence: "monthly" },
+];
+
+export async function seedDefaultBudgets(uid: string) {
+  const batch = writeBatch(db);
+  const budgetsRef = collection(db, "users", uid, "budgets");
+  for (const budget of DEFAULT_BUDGETS) batch.set(doc(budgetsRef), budget);
+  await batch.commit();
+}
 
 export function useBudgets(uid: string | undefined) {
   const [budgets, setBudgets] = useState<Budget[]>([]);
@@ -56,7 +73,11 @@ export function useBudgets(uid: string | undefined) {
 
   function updateBudget(id: string, patch: NewBudget) {
     if (!uid) return;
-    updateDoc(doc(db, "users", uid, "budgets", id), patch);
+    // Drop month when switching to monthly — updateDoc won't clear it otherwise.
+    updateDoc(doc(db, "users", uid, "budgets", id), {
+      ...patch,
+      ...(patch.cadence === "monthly" ? { month: deleteField() } : {}),
+    });
   }
 
   async function deleteBudget(id: string) {

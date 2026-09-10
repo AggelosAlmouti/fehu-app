@@ -97,7 +97,7 @@ export function BudgetDetailSheet({
           </ul>
         ) : (
           <p className="py-8 text-center text-sm text-muted">
-            No transactions {budget.cadence === "monthly" ? "this month" : "yet"}.
+            No transactions this month.
           </p>
         )}
       </Sheet>

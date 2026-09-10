@@ -9,6 +9,7 @@ import { navItems } from "@/lib/nav";
 import { useAuth } from "@/lib/use-auth";
 import { Wordmark } from "@/components/wordmark";
 import { InstallSection } from "@/components/install-section";
+import { useInstallPrompt } from "@/lib/use-install-prompt";
 
 declare global {
   interface Window {
@@ -74,6 +75,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [googleScriptLoaded, setGoogleScriptLoaded] = useState(false);
   const pathname = usePathname();
   const { user, loading, signInWithGoogleCredential, logOut } = useAuth();
+  const { status: installStatus, promptInstall } = useInstallPrompt();
 
   useEffect(() => {
     setMenuOpen(false);
@@ -123,7 +125,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     });
     window.google.accounts.id.renderButton(buttonEl, {
       theme: "filled_black",
-      size: "large",
+      size: "medium",
       shape: "pill",
       text: "signin_with",
     });
@@ -134,32 +136,44 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
+    const showInstall =
+      installStatus === "installable" ||
+      installStatus === "ios" ||
+      installStatus === "other";
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-6 px-5 text-center">
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-5 px-5 text-center">
         <Script
           src="https://accounts.google.com/gsi/client"
           strategy="afterInteractive"
           onLoad={() => setGoogleScriptLoaded(true)}
         />
         <Wordmark />
-        {isOnline ? (
+        {!isOnline ? (
+          <p className="max-w-xs text-sm text-muted">
+            No internet connection. Connect to the internet to sign in.
+          </p>
+        ) : (
           <>
-            <p className="max-w-xs text-sm text-muted">
-              Sign in with Google to track your expenses and keep them synced
-              across devices.
-            </p>
-            <div id="google-signin-button" />
+            <InstallSection status={installStatus} onInstall={promptInstall} />
+            {showInstall && (
+              <div className="flex w-full max-w-xs items-center gap-3 text-xs text-detail">
+                <span className="h-px flex-1 bg-border" />
+                or
+                <span className="h-px flex-1 bg-border" />
+              </div>
+            )}
+            <div
+              id="google-signin-button"
+              className={
+                installStatus === "installable" ? "opacity-70" : undefined
+              }
+            />
             {signInError && (
               <p className="max-w-xs text-sm text-danger">
                 Sign in failed. Check your connection and try again.
               </p>
             )}
-            <InstallSection />
           </>
-        ) : (
-          <p className="max-w-xs text-sm text-muted">
-            No internet connection. Connect to the internet to sign in.
-          </p>
         )}
       </div>
     );

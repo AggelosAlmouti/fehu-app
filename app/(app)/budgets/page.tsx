@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Pencil, Plus, Trash2, Wallet } from "lucide-react";
-import { formatCurrency, type Budget } from "@/lib/data";
+import { formatCurrency, monthLabel, type Budget } from "@/lib/data";
 import { AddBudgetSheet } from "@/components/add-budget-sheet";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { EmptyState } from "@/components/empty-state";
@@ -66,7 +66,11 @@ export default function BudgetsPage() {
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm text-foreground">{b.name}</div>
                   <div className="text-xs text-muted">
-                    {b.cadence === "monthly" ? "Monthly" : "One-time"}
+                    {b.cadence === "monthly"
+                      ? "Monthly"
+                      : b.month
+                        ? monthLabel(b.month)
+                        : "One-time"}
                   </div>
                 </div>
                 <div className="shrink-0 text-sm font-medium text-foreground">
@@ -103,6 +107,7 @@ export default function BudgetsPage() {
       <AddBudgetSheet
         open={sheetOpen}
         editing={editing}
+        budgets={budgets}
         onClose={closeSheet}
         onAdd={addBudget}
         onUpdate={updateBudget}

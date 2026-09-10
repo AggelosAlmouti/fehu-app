@@ -10,18 +10,25 @@ function seededRandom(seed: number) {
 
 export function generateDummyData(): { budgets: Budget[]; transactions: Transaction[] } {
   const rand = seededRandom(42);
+  const now = new Date();
+
+  function monthKeyFor(monthsAgo: number): string {
+    const d = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  }
+
   const budgets: Budget[] = [
     { id: "d-groceries", name: "Groceries", amount: 400, cadence: "monthly" },
     { id: "d-rent", name: "Rent", amount: 950, cadence: "monthly" },
     { id: "d-transport", name: "Transport", amount: 120, cadence: "monthly" },
     { id: "d-entertainment", name: "Entertainment", amount: 150, cadence: "monthly" },
-    { id: "d-laptop", name: "New laptop", amount: 1200, cadence: "one-time" },
-    { id: "d-vacation", name: "Vacation fund", amount: 2000, cadence: "one-time" },
+    { id: "d-vienna", name: "Vienna trip", amount: 900, cadence: "one-time", month: monthKeyFor(8) },
+    { id: "d-rome", name: "Rome trip", amount: 700, cadence: "one-time", month: monthKeyFor(3) },
+    { id: "d-berlin", name: "Berlin trip", amount: 400, cadence: "one-time", month: monthKeyFor(0) },
   ];
 
   const transactions: Transaction[] = [];
   let txId = 0;
-  const now = new Date();
 
   function pick<T>(options: T[]): T {
     return options[Math.floor(rand() * options.length)];
@@ -101,23 +108,40 @@ export function generateDummyData(): { budgets: Budget[]; transactions: Transact
     }
   }
 
-  const oneTimeContributions: { budgetId: string; title: string; monthsAgo: number[] }[] = [
-    { budgetId: "d-laptop", title: "Laptop payment", monthsAgo: [9, 5, 1] },
-    { budgetId: "d-vacation", title: "Vacation savings", monthsAgo: [10, 7, 4, 2] },
+  const trips: { budgetId: string; title: string; monthsAgo: number; items: [string, number][] }[] = [
+    {
+      budgetId: "d-vienna",
+      title: "Vienna",
+      monthsAgo: 8,
+      items: [["Flights", 260], ["Hotel", 340], ["Museums", 45], ["Dinner out", 60], ["Coffee & pastries", 25]],
+    },
+    {
+      budgetId: "d-rome",
+      title: "Rome",
+      monthsAgo: 3,
+      items: [["Flights", 180], ["Hotel", 260], ["Colosseum tickets", 32], ["Gelato & dinners", 90]],
+    },
+    {
+      budgetId: "d-berlin",
+      title: "Berlin",
+      monthsAgo: 0,
+      items: [["Flights", 140], ["Hostel", 90]],
+    },
   ];
-  for (const { budgetId, title, monthsAgo } of oneTimeContributions) {
-    for (const m of monthsAgo) {
-      const reference = new Date(now.getFullYear(), now.getMonth() - m, 1);
-      const daysInMonth = new Date(reference.getFullYear(), reference.getMonth() + 1, 0).getDate();
+  for (const trip of trips) {
+    const reference = new Date(now.getFullYear(), now.getMonth() - trip.monthsAgo, 1);
+    const daysInMonth = new Date(reference.getFullYear(), reference.getMonth() + 1, 0).getDate();
+    const cap = trip.monthsAgo === 0 ? Math.min(now.getDate(), daysInMonth) : daysInMonth;
+    trip.items.forEach(([title, amount], i) => {
       transactions.push({
         id: `d-tx-${txId++}`,
         type: "expense",
-        title,
-        amount: Math.round((100 + rand() * 300) * 100) / 100,
-        budgetId,
-        date: dateInMonth(reference.getFullYear(), reference.getMonth(), 1 + Math.floor(rand() * daysInMonth)),
+        title: `${trip.title} — ${title}`,
+        amount,
+        budgetId: trip.budgetId,
+        date: dateInMonth(reference.getFullYear(), reference.getMonth(), Math.min(cap, 1 + i * 2)),
       });
-    }
+    });
   }
 
   transactions.sort((a, b) => b.date.localeCompare(a.date));

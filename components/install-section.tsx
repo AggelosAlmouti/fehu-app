@@ -1,45 +1,42 @@
 "use client";
 
-import { Share } from "lucide-react";
-import { useInstallPrompt } from "@/lib/use-install-prompt";
+import type { InstallStatus } from "@/lib/use-install-prompt";
+import { InstallInstructions } from "@/components/install-instructions";
 
 // Sign-in gate only — see CLAUDE.md, this must never render on the marketing page.
-export function InstallSection() {
-  const { status, promptInstall } = useInstallPrompt();
+export function InstallSection({
+  status,
+  onInstall,
+}: {
+  status: InstallStatus;
+  onInstall: () => void;
+}) {
+  if (status === "installable") {
+    return (
+      <button
+        type="button"
+        onClick={onInstall}
+        className="rounded-full bg-accent px-6 py-2.5 text-sm font-medium text-background transition-opacity hover:opacity-90"
+      >
+        Install app
+      </button>
+    );
+  }
 
-  if (status === "checking" || status === "installed") return null;
+  if (status === "already-installed") {
+    return (
+      <p className="max-w-xs text-sm text-muted">Fehu is already installed.</p>
+    );
+  }
 
-  return (
-    <div className="max-w-xs text-center">
-      {status === "installable" && (
-        <button
-          type="button"
-          onClick={promptInstall}
-          className="rounded-full border border-accent/40 px-4 py-2 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
-        >
-          Install app
-        </button>
-      )}
-      {status === "ios" && (
-        <p className="text-xs text-muted">
-          Tap <Share className="inline size-3 align-text-bottom" aria-hidden="true" /> Share, then "Add to Home
-          Screen".
-        </p>
-      )}
-      {status === "other" && (
-        <p className="text-xs text-muted">
-          Check your browser's{" "}
-          <a
-            href="https://web.dev/learn/pwa/installation"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-accent hover:underline"
-          >
-            guide
-          </a>{" "}
-          on how to install a PWA, or use Chrome for the official version.
-        </p>
-      )}
-    </div>
-  );
+  if (status === "ios" || status === "other") {
+    return (
+      <div className="w-full max-w-xs rounded-[var(--radius-card)] border border-border bg-surface p-4 text-left">
+        <p className="mb-3 text-sm font-medium text-foreground">Install app</p>
+        <InstallInstructions status={status} />
+      </div>
+    );
+  }
+
+  return null;
 }

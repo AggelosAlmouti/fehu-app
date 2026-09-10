@@ -1,15 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { Budget, BudgetCadence } from "@/lib/data";
+import { todayISO, type Budget, type BudgetCadence } from "@/lib/data";
 import type { NewBudget } from "@/lib/use-budgets";
 import { AmountInput } from "@/components/amount-input";
 import { Sheet } from "@/components/sheet";
 import { SheetHeader } from "@/components/sheet-header";
 
+const MAX_NAME_LENGTH = 30;
+
 export function AddBudgetSheet({
   open,
   editing,
+  budgets,
   onClose,
   onAdd,
   onUpdate,
@@ -17,6 +20,8 @@ export function AddBudgetSheet({
   open: boolean;
   /** Budget being edited, or null when adding a new one. */
   editing: Budget | null;
+  /** Existing budgets, checked against the name field for duplicates. */
+  budgets: Budget[];
   onClose: () => void;
   onAdd: (budget: NewBudget) => void;
   onUpdate: (id: string, patch: NewBudget) => void;
@@ -42,12 +47,32 @@ export function AddBudgetSheet({
   }, [open, editing]);
 
   const parsed = Number.parseFloat(amount);
-  const valid = name.trim().length > 0 && Number.isFinite(parsed) && parsed > 0;
+  const trimmedName = name.trim();
+  const duplicate = budgets.some(
+    (b) =>
+      b.id !== editing?.id &&
+      b.name.toLowerCase() === trimmedName.toLowerCase(),
+  );
+  const valid =
+    trimmedName.length > 0 &&
+    !duplicate &&
+    Number.isFinite(parsed) &&
+    parsed > 0;
+
+  const preservedMonth =
+    editing && editing.cadence === "one-time" ? editing.month : undefined;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!valid) return;
-    const payload: NewBudget = { name: name.trim(), amount: parsed, cadence };
+    const payload: NewBudget = {
+      name: trimmedName,
+      amount: parsed,
+      cadence,
+      ...(cadence === "one-time"
+        ? { month: preservedMonth ?? todayISO().slice(0, 7) }
+        : {}),
+    };
     if (editing) onUpdate(editing.id, payload);
     else onAdd(payload);
     onClose();
@@ -74,32 +99,46 @@ export function AddBudgetSheet({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Groceries"
+            maxLength={MAX_NAME_LENGTH}
             className="w-full rounded-[var(--radius-card)] border border-border bg-card px-3.5 py-3 text-base text-foreground outline-none transition-colors placeholder:text-muted focus:border-border-strong"
           />
+          {duplicate && (
+            <p className="mt-1.5 text-xs text-danger">
+              You already have a budget named "{trimmedName}".
+            </p>
+          )}
         </div>
 
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-detail">
-            {cadence === "monthly" ? "Monthly budget" : "One-time budget"}
-          </span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={cadence === "one-time"}
-            aria-label="One-time budget"
-            onClick={() =>
-              setCadence(cadence === "monthly" ? "one-time" : "monthly")
-            }
-            className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
-              cadence === "one-time" ? "bg-accent" : "bg-border-strong"
-            }`}
-          >
-            <span
-              className={`absolute left-0.5 top-0.5 size-4 rounded-full bg-foreground transition-transform ${
-                cadence === "one-time" ? "translate-x-4" : "translate-x-0"
+        <div>
+          <span className="mb-1.5 block text-xs text-detail">Repeats</span>
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={cadence === "one-time"}
+              aria-label="Scope this budget to the current month only"
+              onClick={() =>
+                setCadence(cadence === "monthly" ? "one-time" : "monthly")
+              }
+              className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
+                cadence === "one-time" ? "bg-accent" : "bg-border-strong"
               }`}
-            />
-          </button>
+            >
+              <span
+                className={`absolute left-0.5 top-0.5 size-4 rounded-full bg-foreground transition-transform ${
+                  cadence === "one-time" ? "translate-x-4" : "translate-x-0"
+                }`}
+              />
+            </button>
+            <span className="text-sm text-foreground">
+              {cadence === "monthly" ? "Every month" : "One-time"}
+            </span>
+          </div>
+          <p className="mt-1.5 text-xs text-muted">
+            {cadence === "monthly"
+              ? "Resets to zero at the start of each month."
+              : "Only for the current month."}
+          </p>
         </div>
 
         <button

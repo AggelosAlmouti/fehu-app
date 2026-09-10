@@ -7,6 +7,8 @@ export type Budget = {
   name: string;
   amount: number;
   cadence: BudgetCadence;
+  /** Only set for one-time budgets — the "YYYY-MM" month it's scoped to. */
+  month?: string;
 };
 
 // `amount` is always positive; `type` carries the sign.
@@ -162,16 +164,21 @@ export function budgetSpending(
   const expenses = transactions.filter(
     (t): t is ExpenseTransaction => t.type === "expense",
   );
-  return budgets.map((budget) => {
-    const matching = expenses.filter((e) => e.budgetId === budget.id);
-    const scoped =
-      budget.cadence === "monthly" ? matching.filter((e) => isThisMonth(e.date)) : matching;
-    return {
-      budget,
-      spent: scoped.reduce((sum, e) => sum + e.amount, 0),
-      transactions: scoped,
-    };
-  });
+  const currentMonth = todayISO().slice(0, 7);
+  return budgets
+    .filter((budget) => budget.cadence === "monthly" || budget.month === currentMonth)
+    .map((budget) => {
+      const matching = expenses.filter((e) => e.budgetId === budget.id);
+      const scoped =
+        budget.cadence === "monthly"
+          ? matching.filter((e) => isThisMonth(e.date))
+          : matching.filter((e) => e.date.slice(0, 7) === budget.month);
+      return {
+        budget,
+        spent: scoped.reduce((sum, e) => sum + e.amount, 0),
+        transactions: scoped,
+      };
+    });
 }
 
 export function budgetSpendingInPeriod(
@@ -197,6 +204,14 @@ export function budgetSpendingInPeriod(
       };
     })
     .filter((s) => s.transactions.length > 0);
+}
+
+export function monthLabel(monthKey: string): string {
+  const [y, m] = monthKey.split("-").map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString("en-IE", {
+    month: "short",
+    year: "numeric",
+  });
 }
 
 export function relativeDay(iso: string): string {

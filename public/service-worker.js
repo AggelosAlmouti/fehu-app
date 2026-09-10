@@ -28,17 +28,24 @@ self.addEventListener("fetch", (event) => {
   }
 
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+      const cached = await cache.match(event.request);
+
+      // Cache-first, refresh in the background (see CLAUDE.md).
+      const network = fetch(event.request).then((response) => {
         // Only cache successful responses — fetch() resolves (doesn't
         // reject) on HTTP errors like 404/500, so without this check we'd
         // cache error pages and serve them later while offline.
-        if (response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-        }
+        if (response.ok) cache.put(event.request, response.clone());
         return response;
-      })
-      .catch(() => caches.match(event.request)),
+      });
+
+      if (cached) {
+        network.catch(() => {});
+        return cached;
+      }
+      return network;
+    })(),
   );
 });

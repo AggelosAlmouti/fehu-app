@@ -59,6 +59,11 @@ export function AddTransactionSheet({
     parsed > 0 &&
     (txType !== "expense" || budgetId !== undefined);
 
+  const currentMonth = todayISO().slice(0, 7);
+  const pickableBudgets = budgets.filter(
+    (b) => b.cadence === "monthly" || b.month === currentMonth || b.id === budgetId,
+  );
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!valid) return;
@@ -148,9 +153,9 @@ export function AddTransactionSheet({
           {txType === "expense" && (
             <div>
               <span className="mb-2 block text-xs text-detail">Budget</span>
-              {budgets.length > 0 ? (
+              {pickableBudgets.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
-                  {budgets.map((b) => {
+                  {pickableBudgets.map((b) => {
                     const active = b.id === budgetId
                     return (
                       <button
