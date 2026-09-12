@@ -90,3 +90,16 @@ body {
 .fehu-fade-in {
   animation: fehu-fade-in 0.2s ease-out;
 }
+
+@keyframes fehu-drop-in {
+  from {
+    transform: translateY(-60px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.fehu-drop-in {
+  animation: fehu-drop-in 0.25s ease-out;
+}

@@ -42,13 +42,16 @@ export async function seedDefaultBudgets(uid: string) {
 
 export function useBudgets(uid: string | undefined) {
   const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!uid) {
       setBudgets([]);
+      setLoading(false);
       return;
     }
-    return onSnapshot(
+    setLoading(true);
+    const unsubscribe = onSnapshot(
       collection(db, "users", uid, "budgets"),
       (snapshot) => {
         setBudgets(
@@ -57,13 +60,23 @@ export function useBudgets(uid: string | undefined) {
             ...docSnap.data(),
           })) as Budget[],
         );
+        setLoading(false);
       },
       (error) => {
+        setLoading(false);
         if (error.code !== "permission-denied") {
           console.error(error);
         }
       },
     );
+    function handleOnline() {
+      setLoading(true);
+    }
+    window.addEventListener("online", handleOnline);
+    return () => {
+      unsubscribe();
+      window.removeEventListener("online", handleOnline);
+    };
   }, [uid]);
 
   function addBudget(next: NewBudget) {
@@ -94,5 +107,5 @@ export function useBudgets(uid: string | undefined) {
     await batch.commit();
   }
 
-  return { budgets, addBudget, updateBudget, deleteBudget };
+  return { budgets, loading, addBudget, updateBudget, deleteBudget };
 }

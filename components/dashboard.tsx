@@ -14,6 +14,7 @@ import {
 import { AddTransactionSheet } from "@/components/add-transaction-sheet";
 import { BudgetDetailSheet } from "@/components/budget-detail-sheet";
 import { EmptyState } from "@/components/empty-state";
+import { LoadingPill } from "@/components/loading-pill";
 import { useAuth } from "@/lib/use-auth";
 import { useCurrency } from "@/lib/use-currency";
 import { useTransactions } from "@/lib/use-transactions";
@@ -22,9 +23,14 @@ import { useBudgets } from "@/lib/use-budgets";
 export function Dashboard() {
   const { effectiveUser } = useAuth();
   const { currency } = useCurrency();
-  const { transactions, addTransaction, updateTransaction, deleteTransaction } =
-    useTransactions(effectiveUser?.uid);
-  const { budgets } = useBudgets(effectiveUser?.uid);
+  const {
+    transactions,
+    loading: transactionsLoading,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+  } = useTransactions(effectiveUser?.uid);
+  const { budgets, loading: budgetsLoading } = useBudgets(effectiveUser?.uid);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] =
@@ -76,6 +82,8 @@ export function Dashboard() {
 
   return (
     <div className="mx-auto w-full max-w-xl px-5 pb-32 pt-6 md:pt-10">
+      {(transactionsLoading || budgetsLoading) && <LoadingPill />}
+
       <div className="mb-[18px] flex items-center justify-between">
         <span className="text-sm text-detail">Welcome back!</span>
         <button
@@ -124,7 +132,7 @@ export function Dashboard() {
             />
           ))}
         </div>
-      ) : (
+      ) : budgetsLoading ? null : (
         <EmptyState icon={Wallet}>
           No budgets set yet. Add one from{" "}
           <Link
@@ -161,6 +169,7 @@ export function Dashboard() {
         open={sheetOpen}
         editing={editingTransaction}
         budgets={budgets}
+        budgetsLoading={budgetsLoading}
         onClose={closeAddSheet}
         onAdd={addTransaction}
         onUpdate={updateTransaction}

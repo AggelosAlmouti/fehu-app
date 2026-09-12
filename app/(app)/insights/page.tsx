@@ -8,6 +8,7 @@ import { AddTransactionSheet } from "@/components/add-transaction-sheet";
 import { BudgetDetailSheet } from "@/components/budget-detail-sheet";
 import { EmptyState } from "@/components/empty-state";
 import { InsightsChart } from "@/components/insights-chart";
+import { LoadingPill } from "@/components/loading-pill";
 import { useAuth } from "@/lib/use-auth";
 import { useCurrency } from "@/lib/use-currency";
 import { useTransactions } from "@/lib/use-transactions";
@@ -40,6 +41,7 @@ export default function InsightsPage() {
   const budgets = demoMode ? demoData.budgets : liveBudgets.budgets;
   const updateTransaction = demoMode ? () => {} : live.updateTransaction;
   const deleteTransaction = demoMode ? () => {} : live.deleteTransaction;
+  const loading = !demoMode && (live.loading || liveBudgets.loading);
 
   const [period, setPeriod] = useState<Period>(12);
   const [openBudgetId, setOpenBudgetId] = useState<string | null>(null);
@@ -67,9 +69,11 @@ export default function InsightsPage() {
 
   return (
     <div className="mx-auto w-full max-w-xl px-5 pb-32 pt-6 md:pt-10">
+      {loading && <LoadingPill />}
+
       <h1 className="mb-8 text-2xl font-medium tracking-tight md:mb-10">Insights</h1>
 
-      {transactions.length === 0 ? (
+      {loading ? null : transactions.length === 0 ? (
         <EmptyState icon={ChartLine}>
           Add a transaction to start seeing trends and breakdowns here.
         </EmptyState>

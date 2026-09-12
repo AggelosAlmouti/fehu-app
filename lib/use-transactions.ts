@@ -29,17 +29,20 @@ const COLLECTION = "transactions";
 
 export function useTransactions(uid: string | undefined) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!uid) {
       setTransactions([]);
+      setLoading(false);
       return;
     }
+    setLoading(true);
     const transactionsQuery = query(
       collection(db, "users", uid, COLLECTION),
       orderBy("date", "desc"),
     );
-    return onSnapshot(
+    const unsubscribe = onSnapshot(
       transactionsQuery,
       (snapshot) => {
         setTransactions(
@@ -47,14 +50,24 @@ export function useTransactions(uid: string | undefined) {
             (docSnap) => ({ id: docSnap.id, ...docSnap.data() }) as Transaction,
           ),
         );
+        setLoading(false);
       },
       (error) => {
+        setLoading(false);
         // Expected during sign-out; only log real errors.
         if (error.code !== "permission-denied") {
           console.error(error);
         }
       },
     );
+    function handleOnline() {
+      setLoading(true);
+    }
+    window.addEventListener("online", handleOnline);
+    return () => {
+      unsubscribe();
+      window.removeEventListener("online", handleOnline);
+    };
   }, [uid]);
 
   function addTransaction(next: NewTransaction) {
@@ -76,5 +89,5 @@ export function useTransactions(uid: string | undefined) {
     deleteDoc(doc(db, "users", uid, COLLECTION, id));
   }
 
-  return { transactions, addTransaction, updateTransaction, deleteTransaction };
+  return { transactions, loading, addTransaction, updateTransaction, deleteTransaction };
 }

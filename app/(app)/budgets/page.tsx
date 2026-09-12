@@ -6,6 +6,7 @@ import { formatCurrency, monthLabel, type Budget } from "@/lib/data";
 import { AddBudgetSheet } from "@/components/add-budget-sheet";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { EmptyState } from "@/components/empty-state";
+import { LoadingPill } from "@/components/loading-pill";
 import { useAuth } from "@/lib/use-auth";
 import { useCurrency } from "@/lib/use-currency";
 import { useBudgets } from "@/lib/use-budgets";
@@ -13,7 +14,9 @@ import { useBudgets } from "@/lib/use-budgets";
 export default function BudgetsPage() {
   const { effectiveUser } = useAuth();
   const { currency } = useCurrency();
-  const { budgets, addBudget, updateBudget, deleteBudget } = useBudgets(effectiveUser?.uid);
+  const { budgets, loading, addBudget, updateBudget, deleteBudget } = useBudgets(
+    effectiveUser?.uid,
+  );
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Budget | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Budget | null>(null);
@@ -38,6 +41,8 @@ export default function BudgetsPage() {
 
   return (
     <div className="mx-auto w-full max-w-xl px-5 pb-32 pt-6 md:pt-10">
+      {loading && <LoadingPill />}
+
       <div className="mb-8 flex items-center justify-between md:mb-10">
         <h1 className="text-2xl font-medium tracking-tight">Budgets</h1>
         <button
@@ -98,7 +103,7 @@ export default function BudgetsPage() {
             </li>
           ))}
         </ul>
-      ) : (
+      ) : loading ? null : (
         <EmptyState icon={Wallet}>
           No budgets yet. Add one to start tracking your spending.
         </EmptyState>

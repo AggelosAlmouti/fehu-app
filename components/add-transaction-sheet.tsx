@@ -13,6 +13,7 @@ export function AddTransactionSheet({
   open,
   editing,
   budgets,
+  budgetsLoading = false,
   onClose,
   onAdd,
   onUpdate,
@@ -22,6 +23,7 @@ export function AddTransactionSheet({
   editing: Transaction | null;
   /** Available budgets — shown as pills; required for an expense. */
   budgets: Budget[];
+  budgetsLoading?: boolean;
   onClose: () => void;
   onAdd: (transaction: NewTransaction) => void;
   onUpdate: (id: string, patch: NewTransaction) => void;
@@ -153,7 +155,9 @@ export function AddTransactionSheet({
           {txType === "expense" && (
             <div>
               <span className="mb-2 block text-xs text-detail">Budget</span>
-              {pickableBudgets.length > 0 ? (
+              {budgetsLoading ? (
+                <p className="text-xs text-muted">Loading your budgets…</p>
+              ) : pickableBudgets.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {pickableBudgets.map((b) => {
                     const active = b.id === budgetId
