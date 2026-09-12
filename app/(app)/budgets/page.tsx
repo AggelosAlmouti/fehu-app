@@ -11,9 +11,9 @@ import { useCurrency } from "@/lib/use-currency";
 import { useBudgets } from "@/lib/use-budgets";
 
 export default function BudgetsPage() {
-  const { user } = useAuth();
+  const { effectiveUser } = useAuth();
   const { currency } = useCurrency();
-  const { budgets, addBudget, updateBudget, deleteBudget } = useBudgets(user?.uid);
+  const { budgets, addBudget, updateBudget, deleteBudget } = useBudgets(effectiveUser?.uid);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Budget | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Budget | null>(null);

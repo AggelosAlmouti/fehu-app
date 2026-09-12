@@ -20,11 +20,11 @@ import { useTransactions } from "@/lib/use-transactions";
 import { useBudgets } from "@/lib/use-budgets";
 
 export function Dashboard() {
-  const { user } = useAuth();
+  const { effectiveUser } = useAuth();
   const { currency } = useCurrency();
   const { transactions, addTransaction, updateTransaction, deleteTransaction } =
-    useTransactions(user?.uid);
-  const { budgets } = useBudgets(user?.uid);
+    useTransactions(effectiveUser?.uid);
+  const { budgets } = useBudgets(effectiveUser?.uid);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] =

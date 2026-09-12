@@ -74,7 +74,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [signInError, setSignInError] = useState(false);
   const [googleScriptLoaded, setGoogleScriptLoaded] = useState(false);
   const pathname = usePathname();
-  const { user, loading, signInWithGoogleCredential, logOut } = useAuth();
+  const { user, effectiveUser, hasPriorSession, loading, signInWithGoogleCredential, logOut } =
+    useAuth();
   const { status: installStatus, promptInstall } = useInstallPrompt();
 
   useEffect(() => {
@@ -131,11 +132,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     });
   }, [googleScriptLoaded, loading, user, signInWithGoogleCredential]);
 
-  if (loading) {
+  // No remembered session — nothing to show optimistically yet.
+  if (loading && !hasPriorSession) {
     return <div className="min-h-dvh" />;
   }
 
-  if (!user) {
+  // `loading && hasPriorSession` falls through to the real shell below
+  // rather than blocking here (see CLAUDE.md's Auth model).
+  if (!loading && !user) {
     const showInstall =
       installStatus === "installable" ||
       installStatus === "ios" ||
@@ -187,7 +191,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <NavLinks />
           <div className="mt-auto border-t border-border pt-3">
             <div className="truncate px-3 pb-2 text-xs text-muted">
-              {user?.email}
+              {effectiveUser?.email}
             </div>
             <button
               type="button"
@@ -236,7 +240,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <NavLinks onNavigate={() => setMenuOpen(false)} />
               <div className="mt-auto border-t border-border pt-3">
                 <div className="truncate px-3 pb-2 text-xs text-muted">
-                  {user?.email}
+                  {effectiveUser?.email}
                 </div>
                 <button
                   type="button"

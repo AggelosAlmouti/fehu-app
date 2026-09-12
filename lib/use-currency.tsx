@@ -20,16 +20,16 @@ type CurrencyContextValue = {
 const CurrencyContext = createContext<CurrencyContextValue | null>(null);
 
 export function CurrencyProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { effectiveUser } = useAuth();
   const [currency, setCurrencyState] = useState<CurrencyCode>(DEFAULT_CURRENCY);
 
   useEffect(() => {
-    if (!user) {
+    if (!effectiveUser) {
       setCurrencyState(DEFAULT_CURRENCY);
       return;
     }
     return onSnapshot(
-      doc(db, "users", user.uid, "settings", "preferences"),
+      doc(db, "users", effectiveUser.uid, "settings", "preferences"),
       (snap) => {
         const value = snap.data()?.currency;
         setCurrencyState(isCurrencyCode(value) ? value : DEFAULT_CURRENCY);
@@ -40,12 +40,12 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         }
       },
     );
-  }, [user]);
+  }, [effectiveUser]);
 
   function setCurrency(code: CurrencyCode) {
-    if (!user) return;
+    if (!effectiveUser) return;
     setDoc(
-      doc(db, "users", user.uid, "settings", "preferences"),
+      doc(db, "users", effectiveUser.uid, "settings", "preferences"),
       { currency: code },
       { merge: true },
     );

@@ -24,10 +24,10 @@ const PERIODS: { label: string; value: Period }[] = [
 ];
 
 export default function InsightsPage() {
-  const { user } = useAuth();
+  const { effectiveUser } = useAuth();
   const { currency } = useCurrency();
-  const live = useTransactions(user?.uid);
-  const liveBudgets = useBudgets(user?.uid);
+  const live = useTransactions(effectiveUser?.uid);
+  const liveBudgets = useBudgets(effectiveUser?.uid);
 
   const [demoMode, setDemoMode] = useState(false);
   useEffect(() => {

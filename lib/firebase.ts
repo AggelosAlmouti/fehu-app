@@ -1,5 +1,11 @@
 import { initializeApp, getApps, getApp } from "firebase/app"
-import { getAuth } from "firebase/auth"
+import {
+  getAuth,
+  initializeAuth,
+  indexedDBLocalPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
+} from "firebase/auth"
 import {
   initializeFirestore,
   persistentLocalCache,
@@ -18,7 +24,24 @@ const firebaseConfig = {
 // Dev hot-reload would call initializeApp() twice and crash otherwise.
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
 
-export const auth = getAuth(app)
+// initializeAuth() (not getAuth()) to omit popupRedirectResolver — this app
+// never uses popup/redirect sign-in, and getAuth()'s default resolver
+// proactively loads an unused Google iframe helper on mobile/Safari (see
+// CLAUDE.md's Auth model). Falls back to getAuth() on dev hot-reload, since
+// Auth can't be initialized twice — it just returns the existing instance.
+export const auth = (() => {
+  try {
+    return initializeAuth(app, {
+      persistence: [
+        indexedDBLocalPersistence,
+        browserLocalPersistence,
+        browserSessionPersistence,
+      ],
+    })
+  } catch {
+    return getAuth(app)
+  }
+})()
 
 // Offline support: writes cache locally and sync when back online.
 export const db = initializeFirestore(app, {
