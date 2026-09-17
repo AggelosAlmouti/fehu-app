@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 
 // Open sheet ids, topmost last — lets Escape close only the front sheet.
 const openStack: string[] = [];
@@ -8,6 +8,7 @@ const openStack: string[] = [];
 export function Sheet({
   open,
   onClose,
+  onConfirm,
   ariaLabel,
   role = "dialog",
   maxWidth = "max-w-md",
@@ -17,6 +18,7 @@ export function Sheet({
 }: {
   open: boolean;
   onClose: () => void;
+  onConfirm?: () => void;
   ariaLabel: string;
   /** "alertdialog" for confirmations, "dialog" otherwise. */
   role?: "dialog" | "alertdialog";
@@ -29,12 +31,20 @@ export function Sheet({
   children: ReactNode;
 }) {
   const id = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const active = document.activeElement;
+    if (active instanceof Node && dialogRef.current?.contains(active)) return;
+    dialogRef.current?.focus();
   }, [open]);
 
   useEffect(() => {
@@ -48,13 +58,27 @@ export function Sheet({
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key !== "Escape") return;
-      // Only the topmost sheet responds.
-      if (openStack[openStack.length - 1] === id) onClose();
+      if (openStack[openStack.length - 1] !== id) return;
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key !== "Enter" || !onConfirm) return;
+      const active = document.activeElement;
+      const insideDialog = active instanceof Node && dialogRef.current?.contains(active);
+      if (
+        insideDialog &&
+        (active instanceof HTMLButtonElement ||
+          active instanceof HTMLAnchorElement ||
+          active instanceof HTMLTextAreaElement)
+      ) {
+        return;
+      }
+      onConfirm();
     }
     if (open) window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose, id]);
+  }, [open, onClose, onConfirm, id]);
 
   if (!open) return null;
 
@@ -67,10 +91,12 @@ export function Sheet({
         className="fehu-fade-in absolute inset-0 bg-black/60 backdrop-blur-sm"
       />
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         role={role}
         aria-modal="true"
         aria-label={ariaLabel}
-        className={`fehu-slide-up relative w-full ${maxWidth} rounded-t-3xl border border-border bg-surface px-5 pb-8 pt-5 sm:rounded-3xl sm:pb-6 ${
+        className={`fehu-slide-up relative w-full ${maxWidth} rounded-t-3xl border border-border bg-surface px-5 pb-8 pt-5 outline-none sm:rounded-3xl sm:pb-6 ${
           scrollable ? "flex max-h-[80vh] flex-col" : ""
         }`}
       >

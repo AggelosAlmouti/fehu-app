@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { todayISO, type Budget, type BudgetCadence } from "@/lib/data";
 import type { NewBudget } from "@/lib/use-budgets";
 import { AmountInput } from "@/components/amount-input";
+import { MonthStepper } from "@/components/month-stepper";
 import { Sheet } from "@/components/sheet";
 import { SheetHeader } from "@/components/sheet-header";
 
@@ -29,6 +30,7 @@ export function AddBudgetSheet({
   const [amount, setAmount] = useState("");
   const [name, setName] = useState("");
   const [cadence, setCadence] = useState<BudgetCadence>("monthly");
+  const [month, setMonth] = useState(() => todayISO().slice(0, 7));
   const amountRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -37,10 +39,12 @@ export function AddBudgetSheet({
       setAmount(String(editing.amount));
       setName(editing.name);
       setCadence(editing.cadence);
+      setMonth(editing.cadence === "one-time" && editing.month ? editing.month : todayISO().slice(0, 7));
     } else {
       setAmount("");
       setName("");
       setCadence("monthly");
+      setMonth(todayISO().slice(0, 7));
     }
     const t = setTimeout(() => amountRef.current?.focus(), 120);
     return () => clearTimeout(t);
@@ -59,9 +63,6 @@ export function AddBudgetSheet({
     Number.isFinite(parsed) &&
     parsed > 0;
 
-  const preservedMonth =
-    editing && editing.cadence === "one-time" ? editing.month : undefined;
-
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!valid) return;
@@ -69,9 +70,7 @@ export function AddBudgetSheet({
       name: trimmedName,
       amount: parsed,
       cadence,
-      ...(cadence === "one-time"
-        ? { month: preservedMonth ?? todayISO().slice(0, 7) }
-        : {}),
+      ...(cadence === "one-time" ? { month } : {}),
     };
     if (editing) onUpdate(editing.id, payload);
     else onAdd(payload);
@@ -116,7 +115,7 @@ export function AddBudgetSheet({
               type="button"
               role="switch"
               aria-checked={cadence === "one-time"}
-              aria-label="Scope this budget to the current month only"
+              aria-label="Scope this budget to a single month, like a trip"
               onClick={() =>
                 setCadence(cadence === "monthly" ? "one-time" : "monthly")
               }
@@ -131,14 +130,19 @@ export function AddBudgetSheet({
               />
             </button>
             <span className="text-sm text-foreground">
-              {cadence === "monthly" ? "Every month" : "One-time"}
+              {cadence === "monthly" ? "Every month" : "One month only"}
             </span>
           </div>
           <p className="mt-1.5 text-xs text-muted">
             {cadence === "monthly"
               ? "Resets to zero at the start of each month."
-              : "Only for the current month."}
+              : "For a trip or other one-off spending — only counts expenses in the month below, then disappears from the dashboard."}
           </p>
+          {cadence === "one-time" && (
+            <div className="mt-3 flex items-center justify-between rounded-[var(--radius-card)] border border-border px-3 py-2">
+              <MonthStepper month={month} onChange={setMonth} />
+            </div>
+          )}
         </div>
 
         <button

@@ -21,6 +21,7 @@ export function ConfirmDialog({
     <Sheet
       open={open}
       onClose={onCancel}
+      onConfirm={onConfirm}
       ariaLabel={title}
       role="alertdialog"
       maxWidth="max-w-sm"

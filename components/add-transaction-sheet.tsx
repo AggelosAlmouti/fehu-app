@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { CalendarDays } from "lucide-react";
 import { relativeDay, todayISO, type Budget, type Transaction } from "@/lib/data";
 import type { NewTransaction } from "@/lib/use-transactions";
@@ -89,13 +90,15 @@ export function AddTransactionSheet({
   const verb = editing ? "Edit" : "Add";
   const heading = `${verb} ${txType}`;
 
+  const blockedOnNoBudgets =
+    !editing && txType === "expense" && !budgetsLoading && pickableBudgets.length === 0;
+
   return (
     <>
       <Sheet open={open} onClose={onClose} ariaLabel={heading}>
         <SheetHeader title={heading} onClose={onClose} capitalize />
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          {/* Type is fixed once a transaction exists. */}
+        <div className="flex flex-col gap-5">
           {!editing && (
             <div className="flex rounded-full border border-border-strong p-1">
               <button
@@ -125,75 +128,88 @@ export function AddTransactionSheet({
             </div>
           )}
 
-          <AmountInput value={amount} onChange={setAmount} inputRef={amountRef} />
-
-          <button
-            type="button"
-            onClick={() => setDatePickerOpen(true)}
-            className="flex w-fit items-center gap-1.5 rounded-full border border-accent/40 px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
-          >
-            <CalendarDays className="size-3.5" aria-hidden="true" />
-            {relativeDay(date)}
-          </button>
-
-          <div>
-            <label
-              htmlFor="transaction-title"
-              className="mb-1.5 block text-xs text-detail"
-            >
-              Description (optional)
-            </label>
-            <input
-              id="transaction-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={txType === "expense" ? "e.g. Corner cafe" : "e.g. Salary"}
-              className="w-full rounded-[var(--radius-card)] border border-border bg-card px-3.5 py-3 text-base text-foreground outline-none transition-colors placeholder:text-muted focus:border-border-strong"
-            />
-          </div>
-
-          {txType === "expense" && (
-            <div>
-              <span className="mb-2 block text-xs text-detail">Budget</span>
-              {budgetsLoading ? (
-                <p className="text-xs text-muted">Loading your budgets…</p>
-              ) : pickableBudgets.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {pickableBudgets.map((b) => {
-                    const active = b.id === budgetId
-                    return (
-                      <button
-                        key={b.id}
-                        type="button"
-                        onClick={() => setBudgetId(b.id)}
-                        aria-pressed={active}
-                        className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
-                          active
-                            ? "border-accent bg-accent text-background"
-                            : "border-border-strong text-detail hover:text-foreground"
-                        }`}
-                      >
-                        {b.name}
-                      </button>
-                    )
-                  })}
-                </div>
-              ) : (
-                <p className="text-xs text-muted">
-                  Add a budget first to log an expense.
-                </p>
-              )}
+          {blockedOnNoBudgets ? (
+            <div className="flex flex-col items-center gap-3 rounded-[var(--radius-card)] border border-border bg-card px-4 py-6 text-center">
+              <p className="text-sm text-detail">
+                You need a budget before you can log an expense.
+              </p>
+              <Link
+                href="/budgets?add=1"
+                onClick={onClose}
+                className="rounded-full border border-accent/40 px-4 py-2 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
+              >
+                Add a budget
+              </Link>
             </div>
-          )}
+          ) : (
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              <AmountInput value={amount} onChange={setAmount} inputRef={amountRef} />
 
-          <button
-            type="submit"
-            disabled={!valid}
-            className="mt-1 w-full rounded-full bg-accent py-3.5 text-sm font-medium text-background transition-opacity disabled:opacity-40"
-          >
-            {editing ? "Save changes" : heading}
-          </button>
-        </form>
+              <button
+                type="button"
+                onClick={() => setDatePickerOpen(true)}
+                className="flex w-fit items-center gap-1.5 rounded-full border border-accent/40 px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
+              >
+                <CalendarDays className="size-3.5" aria-hidden="true" />
+                {relativeDay(date)}
+              </button>
+
+              <div>
+                <label
+                  htmlFor="transaction-title"
+                  className="mb-1.5 block text-xs text-detail"
+                >
+                  Description (optional)
+                </label>
+                <input
+                  id="transaction-title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder={txType === "expense" ? "e.g. Corner cafe" : "e.g. Salary"}
+                  className="w-full rounded-[var(--radius-card)] border border-border bg-card px-3.5 py-3 text-base text-foreground outline-none transition-colors placeholder:text-muted focus:border-border-strong"
+                />
+              </div>
+
+              {txType === "expense" && (
+                <div>
+                  <span className="mb-2 block text-xs text-detail">Budget</span>
+                  {budgetsLoading ? (
+                    <p className="text-xs text-muted">Loading your budgets…</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {pickableBudgets.map((b) => {
+                        const active = b.id === budgetId
+                        return (
+                          <button
+                            key={b.id}
+                            type="button"
+                            onClick={() => setBudgetId(b.id)}
+                            aria-pressed={active}
+                            className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
+                              active
+                                ? "border-accent bg-accent text-background"
+                                : "border-border-strong text-detail hover:text-foreground"
+                            }`}
+                          >
+                            {b.name}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={!valid}
+                className="mt-1 w-full rounded-full bg-accent py-3.5 text-sm font-medium text-background transition-opacity disabled:opacity-40"
+              >
+                {editing ? "Save changes" : heading}
+              </button>
+            </form>
+          )}
+        </div>
       </Sheet>
 
       <DatePickerSheet

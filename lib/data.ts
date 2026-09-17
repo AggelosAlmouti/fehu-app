@@ -93,19 +93,29 @@ export function formatCurrency(
   return `${sign}${symbol}${number}`;
 }
 
-function periodStartMonth(transactions: Transaction[], months: number | null): Date | null {
+function monthKeyToDate(monthKey: string): Date {
+  const [y, m] = monthKey.split("-").map(Number);
+  return new Date(y, m - 1, 1);
+}
+
+export function endOfMonthISO(monthKey: string): string {
+  const [y, m] = monthKey.split("-").map(Number);
+  return toLocalISODate(new Date(y, m, 0));
+}
+
+export type MonthRange = { startMonth: string; endMonth: string } | null;
+
+function resolveRange(
+  range: MonthRange,
+  transactions: Transaction[],
+): { startMonth: string; endMonth: string } | null {
+  if (range) return range;
   if (transactions.length === 0) return null;
-  const now = new Date();
-  const end = new Date(now.getFullYear(), now.getMonth(), 1);
-  if (months === null) {
-    const earliest = transactions.reduce(
-      (min, t) => (t.date < min ? t.date : min),
-      transactions[0].date,
-    );
-    const [y, m] = earliest.split("-").map(Number);
-    return new Date(y, m - 1, 1);
-  }
-  return new Date(end.getFullYear(), end.getMonth() - (months - 1), 1);
+  const earliest = transactions.reduce(
+    (min, t) => (t.date < min ? t.date : min),
+    transactions[0].date,
+  );
+  return { startMonth: earliest.slice(0, 7), endMonth: todayISO().slice(0, 7) };
 }
 
 export type MonthlyTotal = {
@@ -115,14 +125,11 @@ export type MonthlyTotal = {
   earned: number;
 };
 
-export function monthlyTotals(
-  transactions: Transaction[],
-  months: number | null,
-): MonthlyTotal[] {
-  const start = periodStartMonth(transactions, months);
-  if (!start) return [];
-  const now = new Date();
-  const end = new Date(now.getFullYear(), now.getMonth(), 1);
+export function monthlyTotals(transactions: Transaction[], range: MonthRange): MonthlyTotal[] {
+  const resolved = resolveRange(range, transactions);
+  if (!resolved) return [];
+  const start = monthKeyToDate(resolved.startMonth);
+  const end = monthKeyToDate(resolved.endMonth);
 
   const buckets = new Map<string, MonthlyTotal>();
   for (const d = new Date(start); d <= end; d.setMonth(d.getMonth() + 1)) {
@@ -144,9 +151,9 @@ export function monthlyTotals(
 }
 
 export function isThisMonth(iso: string): boolean {
-  const now = new Date();
+  const today = new Date();
   const d = new Date(iso + "T00:00:00");
-  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth();
 }
 
 type ExpenseTransaction = Extract<Transaction, { type: "expense" }>;
@@ -184,12 +191,12 @@ export function budgetSpending(
 export function budgetSpendingInPeriod(
   budgets: Budget[],
   transactions: Transaction[],
-  months: number | null,
+  range: MonthRange,
 ): BudgetSpending[] {
-  const start = periodStartMonth(transactions, months);
-  if (!start) return [];
-  const startISO = toLocalISODate(start);
-  const endISO = todayISO();
+  const resolved = resolveRange(range, transactions);
+  if (!resolved) return [];
+  const startISO = `${resolved.startMonth}-01`;
+  const endISO = endOfMonthISO(resolved.endMonth);
   const expenses = transactions.filter(
     (t): t is ExpenseTransaction =>
       t.type === "expense" && t.date >= startISO && t.date <= endISO,
@@ -207,11 +214,16 @@ export function budgetSpendingInPeriod(
 }
 
 export function monthLabel(monthKey: string): string {
-  const [y, m] = monthKey.split("-").map(Number);
-  return new Date(y, m - 1, 1).toLocaleDateString("en-IE", {
+  return monthKeyToDate(monthKey).toLocaleDateString("en-IE", {
     month: "short",
     year: "numeric",
   });
+}
+
+export function shiftMonthKey(monthKey: string, delta: number): string {
+  const d = monthKeyToDate(monthKey);
+  d.setMonth(d.getMonth() + delta);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
 export function relativeDay(iso: string): string {
@@ -224,7 +236,5 @@ export function relativeDay(iso: string): string {
   if (diff === 0) return "today";
   if (diff === 1) return "yesterday";
   if (diff === -1) return "tomorrow";
-  if (diff > 1 && diff < 7) return `${diff} days ago`;
-  if (diff < -1 && diff > -7) return `in ${-diff} days`;
   return d.toLocaleDateString("en-IE", { day: "numeric", month: "short" });
 }

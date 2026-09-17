@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
-import { formatCurrency, relativeDay, type Budget, type Transaction } from "@/lib/data";
-import { ConfirmDialog } from "@/components/confirm-dialog";
+import { formatCurrency, type Budget, type Transaction } from "@/lib/data";
+import { DeleteTransactionDialog } from "@/components/delete-transaction-dialog";
 import { Sheet } from "@/components/sheet";
 import { SheetHeader } from "@/components/sheet-header";
+import { TransactionRow } from "@/components/transaction-row";
 import { useCurrency } from "@/lib/use-currency";
 
 type ExpenseTransaction = Extract<Transaction, { type: "expense" }>;
@@ -63,36 +63,13 @@ export function BudgetDetailSheet({
         {sorted.length > 0 ? (
           <ul className="flex flex-col overflow-y-auto">
             {sorted.map((t, i) => (
-              <li
+              <TransactionRow
                 key={t.id}
-                className={`flex items-center gap-3 py-3 ${
-                  i === sorted.length - 1 ? "" : "border-b border-border"
-                }`}
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm">{t.title}</div>
-                  <div className="text-xs text-muted">{relativeDay(t.date)}</div>
-                </div>
-                <div className="shrink-0 text-sm font-medium">
-                  {formatCurrency(t.amount, currency)}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onEdit(t)}
-                  aria-label={`Edit ${t.title}`}
-                  className="flex size-8 shrink-0 items-center justify-center rounded-full text-detail transition-colors hover:text-foreground"
-                >
-                  <Pencil className="size-4" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPendingDelete(t)}
-                  aria-label={`Delete ${t.title}`}
-                  className="flex size-8 shrink-0 items-center justify-center rounded-full text-detail transition-colors hover:text-danger"
-                >
-                  <Trash2 className="size-4" aria-hidden="true" />
-                </button>
-              </li>
+                transaction={t}
+                isLast={i === sorted.length - 1}
+                onEdit={() => onEdit(t)}
+                onDelete={() => setPendingDelete(t)}
+              />
             ))}
           </ul>
         ) : (
@@ -102,14 +79,8 @@ export function BudgetDetailSheet({
         )}
       </Sheet>
 
-      <ConfirmDialog
-        open={pendingDelete !== null}
-        title="Delete transaction"
-        description={
-          pendingDelete
-            ? `Delete "${pendingDelete.title}"? This can't be undone.`
-            : ""
-        }
+      <DeleteTransactionDialog
+        transaction={pendingDelete}
         onCancel={() => setPendingDelete(null)}
         onConfirm={() => {
           if (pendingDelete) onDelete(pendingDelete.id);

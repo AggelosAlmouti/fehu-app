@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Pencil, Plus, Trash2, Wallet } from "lucide-react";
 import { formatCurrency, monthLabel, type Budget } from "@/lib/data";
 import { AddBudgetSheet } from "@/components/add-budget-sheet";
@@ -12,6 +13,7 @@ import { useCurrency } from "@/lib/use-currency";
 import { useBudgets } from "@/lib/use-budgets";
 
 export default function BudgetsPage() {
+  const router = useRouter();
   const { effectiveUser } = useAuth();
   const { currency } = useCurrency();
   const { budgets, loading, addBudget, updateBudget, deleteBudget } = useBudgets(
@@ -20,6 +22,13 @@ export default function BudgetsPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Budget | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Budget | null>(null);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("add") === "1") {
+      setSheetOpen(true);
+      router.replace("/budgets");
+    }
+  }, [router]);
 
   const sorted = [...budgets].sort((a, b) => b.amount - a.amount);
   const total = budgets.reduce((sum, b) => sum + b.amount, 0);

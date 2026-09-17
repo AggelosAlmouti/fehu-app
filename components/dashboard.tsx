@@ -17,20 +17,20 @@ import { EmptyState } from "@/components/empty-state";
 import { LoadingPill } from "@/components/loading-pill";
 import { useAuth } from "@/lib/use-auth";
 import { useCurrency } from "@/lib/use-currency";
-import { useTransactions } from "@/lib/use-transactions";
-import { useBudgets } from "@/lib/use-budgets";
+import { useDemoAwareData } from "@/lib/use-demo-aware-data";
 
 export function Dashboard() {
   const { effectiveUser } = useAuth();
   const { currency } = useCurrency();
   const {
     transactions,
-    loading: transactionsLoading,
+    budgets,
     addTransaction,
     updateTransaction,
     deleteTransaction,
-  } = useTransactions(effectiveUser?.uid);
-  const { budgets, loading: budgetsLoading } = useBudgets(effectiveUser?.uid);
+    transactionsLoading,
+    budgetsLoading,
+  } = useDemoAwareData(effectiveUser?.uid);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] =

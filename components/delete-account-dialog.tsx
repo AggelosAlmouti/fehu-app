@@ -42,6 +42,7 @@ export function DeleteAccountDialog({
     <Sheet
       open={open}
       onClose={onClose}
+      onConfirm={handleDelete}
       ariaLabel="Delete account"
       role="alertdialog"
       maxWidth="max-w-sm"

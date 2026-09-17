@@ -69,7 +69,11 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [optimisticUser] = useState<OptimisticUser | null>(readOptimisticUser);
+  const [optimisticUser, setOptimisticUser] = useState<OptimisticUser | null>(null);
+
+  useEffect(() => {
+    setOptimisticUser(readOptimisticUser());
+  }, []);
 
   useEffect(() => {
     return onAuthStateChanged(auth, (firebaseUser) => {
