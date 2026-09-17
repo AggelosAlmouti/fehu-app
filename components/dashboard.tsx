@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Wallet } from "lucide-react";
+import { Coins, Plus, Wallet } from "lucide-react";
 import {
   formatCurrency,
   currentMonthLabel,
@@ -42,6 +42,7 @@ export function Dashboard() {
     useState<Transaction | null>(null);
   const [openBudgetId, setOpenBudgetId] = useState<string | null>(null);
   const [openSourceId, setOpenSourceId] = useState<string | null>(null);
+  const [view, setView] = useState<"expense" | "income">("expense");
 
   const monthly = useMemo(
     () => transactions.filter((t) => isThisMonth(t.date)),
@@ -140,46 +141,84 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div className="mb-2.5 text-xs text-detail">{currentMonthLabel()}</div>
+      <div className="mb-2.5 flex items-center justify-between">
+        <span className="text-xs text-detail">{currentMonthLabel()}</span>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setView("expense")}
+            aria-pressed={view === "expense"}
+            aria-label="Show budgets"
+            className={`flex size-6 items-center justify-center rounded-full transition-colors ${
+              view === "expense"
+                ? "bg-accent text-background"
+                : "text-detail hover:text-foreground"
+            }`}
+          >
+            <Wallet className="size-3.5" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("income")}
+            aria-pressed={view === "income"}
+            aria-label="Show income sources"
+            className={`flex size-6 items-center justify-center rounded-full transition-colors ${
+              view === "income"
+                ? "bg-accent text-background"
+                : "text-detail hover:text-foreground"
+            }`}
+          >
+            <Coins className="size-3.5" aria-hidden="true" />
+          </button>
+        </div>
+      </div>
 
-      {budgetCards.length > 0 ? (
-        <div className="flex flex-col gap-2">
-          {budgetCards.map(({ budget, spent }) => (
-            <BudgetCard
-              key={budget.id}
-              budget={budget}
-              spent={spent}
-              onClick={() => setOpenBudgetId(budget.id)}
+      {view === "expense" ? (
+        budgetCards.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            {budgetCards.map(({ budget, spent }) => (
+              <BudgetCard
+                key={budget.id}
+                budget={budget}
+                spent={spent}
+                onClick={() => setOpenBudgetId(budget.id)}
+              />
+            ))}
+          </div>
+        ) : budgetsLoading ? null : (
+          <EmptyState icon={Wallet}>
+            No budgets set yet. Add one from{" "}
+            <Link
+              href="/budgets"
+              className="mx-1 inline-block font-bold text-foreground transition-transform duration-150 hover:scale-110"
+            >
+              Budgets
+            </Link>{" "}
+            to start tracking spending.
+          </EmptyState>
+        )
+      ) : incomeCards.length > 0 ? (
+        <div className="grid grid-cols-3 gap-2">
+          {incomeCards.map(({ source, earned }) => (
+            <IncomeSourceCard
+              key={source.id}
+              source={source}
+              earned={earned}
+              onClick={() => setOpenSourceId(source.id)}
             />
           ))}
         </div>
-      ) : budgetsLoading ? null : (
-        <EmptyState icon={Wallet}>
-          No budgets set yet. Add one from{" "}
+      ) : sourcesLoading ? null : (
+        <EmptyState icon={Coins}>
+          No income sources yet. Add one from{" "}
           <Link
             href="/budgets"
             className="mx-1 inline-block font-bold text-foreground transition-transform duration-150 hover:scale-110"
           >
             Budgets
           </Link>{" "}
-          to start tracking spending.
+          to start tracking income.
         </EmptyState>
-      )}
-
-      {incomeCards.length > 0 && (
-        <div className="mt-6">
-          <div className="mb-2.5 text-xs text-detail">Income</div>
-          <div className="grid grid-cols-4 gap-2">
-            {incomeCards.map(({ source, earned }) => (
-              <IncomeSourceCard
-                key={source.id}
-                source={source}
-                earned={earned}
-                onClick={() => setOpenSourceId(source.id)}
-              />
-            ))}
-          </div>
-        </div>
       )}
 
       <button
@@ -283,9 +322,9 @@ function IncomeSourceCard({
     <button
       type="button"
       onClick={onClick}
-      className="flex aspect-square flex-col justify-between rounded-[10px] border-[0.5px] border-border p-3 text-left"
+      className="flex aspect-square flex-col justify-between rounded-[10px] border-[0.5px] border-border p-2 text-left"
     >
-      <span className="truncate text-[13px] font-medium text-accent">
+      <span className="truncate text-[13px] font-medium text-foreground">
         {source.name}
       </span>
       <span className="truncate text-base font-medium text-accent">

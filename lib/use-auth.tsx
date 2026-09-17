@@ -12,6 +12,7 @@ import {
   signInWithCredential,
   signOut,
   deleteUser,
+  getAdditionalUserInfo,
   GoogleAuthProvider,
   type User,
 } from "firebase/auth";
@@ -92,9 +93,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const credential = GoogleAuthProvider.credential(idToken);
     const result = await signInWithCredential(auth, credential);
     setUser(result.user);
-    // creationTime === lastSignInTime only on the very first sign-in.
-    const { creationTime, lastSignInTime } = result.user.metadata;
-    if (creationTime === lastSignInTime) {
+    // isNewUser, not creationTime === lastSignInTime — see CLAUDE.md.
+    if (getAdditionalUserInfo(result)?.isNewUser) {
       await Promise.all([
         seedDefaultBudgets(result.user.uid),
         seedDefaultIncomeSources(result.user.uid),
