@@ -23,7 +23,13 @@ export type NewTransaction =
       date: string;
       budgetId?: string;
     }
-  | { type: "income"; title: string; amount: number; date: string };
+  | {
+      type: "income";
+      title: string;
+      amount: number;
+      date: string;
+      sourceId?: string;
+    };
 
 const COLLECTION = "transactions";
 
@@ -77,10 +83,11 @@ export function useTransactions(uid: string | undefined) {
 
   function updateTransaction(id: string, patch: NewTransaction) {
     if (!uid) return;
-    // Drop budgetId when switching to income — updateDoc won't clear it otherwise.
+    // Drop the other type's linking field — updateDoc won't clear it otherwise.
     updateDoc(doc(db, "users", uid, COLLECTION, id), {
       ...patch,
       ...(patch.type === "income" ? { budgetId: deleteField() } : {}),
+      ...(patch.type === "expense" ? { sourceId: deleteField() } : {}),
     });
   }
 

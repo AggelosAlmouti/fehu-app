@@ -8,7 +8,8 @@ import { LogOut, Menu, X } from "lucide-react";
 import { navItems } from "@/lib/nav";
 import { useAuth } from "@/lib/use-auth";
 import { Wordmark } from "@/components/wordmark";
-import { InstallSection } from "@/components/install-section";
+import { InstallPromptDialog } from "@/components/install-prompt-dialog";
+import { Toast } from "@/components/toast";
 import { useInstallPrompt } from "@/lib/use-install-prompt";
 
 declare global {
@@ -73,6 +74,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [isOnline, setIsOnline] = useState(true);
   const [signInError, setSignInError] = useState(false);
   const [googleScriptLoaded, setGoogleScriptLoaded] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const pathname = usePathname();
   const { user, effectiveUser, hasPriorSession, loading, signInWithGoogleCredential, logOut } =
     useAuth();
@@ -126,7 +128,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     });
     window.google.accounts.id.renderButton(buttonEl, {
       theme: "filled_black",
-      size: "medium",
+      size: "large",
       shape: "pill",
       text: "signin_with",
     });
@@ -140,10 +142,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // `loading && hasPriorSession` falls through to the real shell below
   // rather than blocking here (see CLAUDE.md's Auth model).
   if (!loading && !user) {
-    const showInstall =
-      installStatus === "installable" ||
-      installStatus === "ios" ||
-      installStatus === "other";
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-5 px-5 text-center">
         <Script
@@ -158,20 +156,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </p>
         ) : (
           <>
-            <InstallSection status={installStatus} onInstall={promptInstall} />
-            {showInstall && (
-              <div className="flex w-full max-w-xs items-center gap-3 text-xs text-detail">
-                <span className="h-px flex-1 bg-border" />
-                or
-                <span className="h-px flex-1 bg-border" />
-              </div>
-            )}
-            <div
-              id="google-signin-button"
-              className={
-                installStatus === "installable" ? "opacity-70" : undefined
-              }
-            />
+            <div id="google-signin-button" />
             {signInError && (
               <p className="max-w-xs text-sm text-danger">
                 Sign in failed. Check your connection and try again.
@@ -185,6 +170,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-dvh">
+      {pathname === "/dashboard" && (
+        <InstallPromptDialog
+          status={installStatus}
+          onInstall={promptInstall}
+          onDismissForever={() =>
+            setToastMessage("You can install the app anytime from Settings.")
+          }
+        />
+      )}
+      <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
+
       <div className="md:flex">
         <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-border px-4 py-6 md:flex">
           <Wordmark className="mb-8 px-3" />

@@ -8,12 +8,15 @@ import {
   currentMonthLabel,
   isThisMonth,
   budgetSpending,
+  incomeBySource,
   type Budget,
+  type IncomeSource,
   type Transaction,
 } from "@/lib/data";
 import { AddTransactionSheet } from "@/components/add-transaction-sheet";
 import { BudgetDetailSheet } from "@/components/budget-detail-sheet";
 import { EmptyState } from "@/components/empty-state";
+import { IncomeSourceDetailSheet } from "@/components/income-source-detail-sheet";
 import { LoadingPill } from "@/components/loading-pill";
 import { useAuth } from "@/lib/use-auth";
 import { useCurrency } from "@/lib/use-currency";
@@ -25,17 +28,20 @@ export function Dashboard() {
   const {
     transactions,
     budgets,
+    sources,
     addTransaction,
     updateTransaction,
     deleteTransaction,
     transactionsLoading,
     budgetsLoading,
+    sourcesLoading,
   } = useDemoAwareData(effectiveUser?.uid);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
   const [openBudgetId, setOpenBudgetId] = useState<string | null>(null);
+  const [openSourceId, setOpenSourceId] = useState<string | null>(null);
 
   const monthly = useMemo(
     () => transactions.filter((t) => isThisMonth(t.date)),
@@ -58,6 +64,11 @@ export function Dashboard() {
   );
   const net = earned - spent;
 
+  const incomeCards = useMemo(
+    () => incomeBySource(sources, transactions),
+    [sources, transactions],
+  );
+
   const spending = useMemo(() => budgetSpending(budgets, transactions), [budgets, transactions]);
   const budgetCards = useMemo(
     () => [...spending].sort((a, b) => b.budget.amount - a.budget.amount),
@@ -68,6 +79,12 @@ export function Dashboard() {
   const openBudgetTransactions = useMemo(
     () => spending.find((s) => s.budget.id === openBudgetId)?.transactions ?? [],
     [spending, openBudgetId],
+  );
+
+  const openSource = sources.find((s) => s.id === openSourceId) ?? null;
+  const openSourceTransactions = useMemo(
+    () => incomeCards.find((c) => c.source.id === openSourceId)?.transactions ?? [],
+    [incomeCards, openSourceId],
   );
 
   function openAddSheet() {
@@ -82,7 +99,7 @@ export function Dashboard() {
 
   return (
     <div className="mx-auto w-full max-w-xl px-5 pb-32 pt-6 md:pt-10">
-      {(transactionsLoading || budgetsLoading) && <LoadingPill />}
+      {(transactionsLoading || budgetsLoading || sourcesLoading) && <LoadingPill />}
 
       <div className="mb-[18px] flex items-center justify-between">
         <span className="text-sm text-detail">Welcome back!</span>
@@ -99,7 +116,11 @@ export function Dashboard() {
       <div className="mb-[22px] flex items-end justify-between">
         <div>
           <div className="mb-0.5 text-xs text-detail">Net</div>
-          <div className="text-[34px] font-medium leading-tight tracking-tight text-foreground">
+          <div
+            className={`text-[34px] font-medium leading-tight tracking-tight ${
+              net >= 0 ? "text-accent" : "text-danger"
+            }`}
+          >
             {formatCurrency(net, currency)}
           </div>
         </div>
@@ -112,7 +133,7 @@ export function Dashboard() {
           </div>
           <div>
             <div className="mb-0.5 text-[11px] text-muted">Earned</div>
-            <div className="text-[13px] text-foreground">
+            <div className="text-[13px] font-medium text-accent">
               {formatCurrency(earned, currency)}
             </div>
           </div>
@@ -145,6 +166,22 @@ export function Dashboard() {
         </EmptyState>
       )}
 
+      {incomeCards.length > 0 && (
+        <div className="mt-6">
+          <div className="mb-2.5 text-xs text-detail">Income</div>
+          <div className="grid grid-cols-4 gap-2">
+            {incomeCards.map(({ source, earned }) => (
+              <IncomeSourceCard
+                key={source.id}
+                source={source}
+                earned={earned}
+                onClick={() => setOpenSourceId(source.id)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       <button
         type="button"
         onClick={openAddSheet}
@@ -165,11 +202,24 @@ export function Dashboard() {
         onDelete={deleteTransaction}
       />
 
+      <IncomeSourceDetailSheet
+        source={openSource}
+        transactions={openSourceTransactions}
+        onClose={() => setOpenSourceId(null)}
+        onEdit={(t) => {
+          setEditingTransaction(t);
+          setSheetOpen(true);
+        }}
+        onDelete={deleteTransaction}
+      />
+
       <AddTransactionSheet
         open={sheetOpen}
         editing={editingTransaction}
         budgets={budgets}
         budgetsLoading={budgetsLoading}
+        sources={sources}
+        sourcesLoading={sourcesLoading}
         onClose={closeAddSheet}
         onAdd={addTransaction}
         onUpdate={updateTransaction}
@@ -214,6 +264,33 @@ function BudgetCard({
           style={{ width: `${pct}%` }}
         />
       </div>
+    </button>
+  );
+}
+
+function IncomeSourceCard({
+  source,
+  earned,
+  onClick,
+}: {
+  source: IncomeSource;
+  earned: number;
+  onClick: () => void;
+}) {
+  const { currency } = useCurrency();
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex aspect-square flex-col justify-between rounded-[10px] border-[0.5px] border-border p-3 text-left"
+    >
+      <span className="truncate text-[13px] font-medium text-accent">
+        {source.name}
+      </span>
+      <span className="truncate text-base font-medium text-accent">
+        {formatCurrency(earned, currency)}
+      </span>
     </button>
   );
 }

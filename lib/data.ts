@@ -1,4 +1,8 @@
-import { currencyMap, DEFAULT_CURRENCY, type CurrencyCode } from "@/lib/currencies";
+import {
+  currencyMap,
+  DEFAULT_CURRENCY,
+  type CurrencyCode,
+} from "@/lib/currencies";
 
 export type BudgetCadence = "monthly" | "one-time";
 
@@ -9,6 +13,11 @@ export type Budget = {
   cadence: BudgetCadence;
   /** Only set for one-time budgets — the "YYYY-MM" month it's scoped to. */
   month?: string;
+};
+
+export type IncomeSource = {
+  id: string;
+  name: string;
 };
 
 // `amount` is always positive; `type` carries the sign.
@@ -27,6 +36,7 @@ export type Transaction =
       type: "income";
       title: string;
       amount: number;
+      sourceId?: string;
       /** ISO date string */
       date: string;
     };
@@ -70,7 +80,6 @@ function abbreviate(value: number): string | null {
     }
     return `${scaled % 1 === 0 ? scaled : scaled.toFixed(1)}${suffix}`;
   }
-  // Unreachable — formatCurrency only calls this once value >= 1M.
   return `${value}`;
 }
 
@@ -125,7 +134,10 @@ export type MonthlyTotal = {
   earned: number;
 };
 
-export function monthlyTotals(transactions: Transaction[], range: MonthRange): MonthlyTotal[] {
+export function monthlyTotals(
+  transactions: Transaction[],
+  range: MonthRange,
+): MonthlyTotal[] {
   const resolved = resolveRange(range, transactions);
   if (!resolved) return [];
   const start = monthKeyToDate(resolved.startMonth);
@@ -153,7 +165,9 @@ export function monthlyTotals(transactions: Transaction[], range: MonthRange): M
 export function isThisMonth(iso: string): boolean {
   const today = new Date();
   const d = new Date(iso + "T00:00:00");
-  return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth();
+  return (
+    d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth()
+  );
 }
 
 type ExpenseTransaction = Extract<Transaction, { type: "expense" }>;
@@ -173,7 +187,9 @@ export function budgetSpending(
   );
   const currentMonth = todayISO().slice(0, 7);
   return budgets
-    .filter((budget) => budget.cadence === "monthly" || budget.month === currentMonth)
+    .filter(
+      (budget) => budget.cadence === "monthly" || budget.month === currentMonth,
+    )
     .map((budget) => {
       const matching = expenses.filter((e) => e.budgetId === budget.id);
       const scoped =
@@ -207,6 +223,58 @@ export function budgetSpendingInPeriod(
       return {
         budget,
         spent: matching.reduce((sum, e) => sum + e.amount, 0),
+        transactions: matching,
+      };
+    })
+    .filter((s) => s.transactions.length > 0);
+}
+
+type IncomeTransaction = Extract<Transaction, { type: "income" }>;
+
+export type IncomeBySource = {
+  source: IncomeSource;
+  earned: number;
+  transactions: IncomeTransaction[];
+};
+
+// Mirrors budgetSpending() — always shows every source, even at €0 this
+// month, the same way a monthly budget always shows regardless of spend.
+export function incomeBySource(
+  sources: IncomeSource[],
+  transactions: Transaction[],
+): IncomeBySource[] {
+  const income = transactions.filter(
+    (t): t is IncomeTransaction => t.type === "income" && isThisMonth(t.date),
+  );
+  return sources.map((source) => {
+    const matching = income.filter((t) => t.sourceId === source.id);
+    return {
+      source,
+      earned: matching.reduce((sum, t) => sum + t.amount, 0),
+      transactions: matching,
+    };
+  });
+}
+
+export function incomeBySourceInPeriod(
+  sources: IncomeSource[],
+  transactions: Transaction[],
+  range: MonthRange,
+): IncomeBySource[] {
+  const resolved = resolveRange(range, transactions);
+  if (!resolved) return [];
+  const startISO = `${resolved.startMonth}-01`;
+  const endISO = endOfMonthISO(resolved.endMonth);
+  const income = transactions.filter(
+    (t): t is IncomeTransaction =>
+      t.type === "income" && t.date >= startISO && t.date <= endISO,
+  );
+  return sources
+    .map((source) => {
+      const matching = income.filter((t) => t.sourceId === source.id);
+      return {
+        source,
+        earned: matching.reduce((sum, t) => sum + t.amount, 0),
         transactions: matching,
       };
     })

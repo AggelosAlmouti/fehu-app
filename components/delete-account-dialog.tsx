@@ -11,7 +11,7 @@ export function DeleteAccountDialog({
   open: boolean;
   onClose: () => void;
 }) {
-  const { deleteAccount } = useAuth();
+  const { deleteAccount, logOut } = useAuth();
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState(false);
@@ -47,9 +47,7 @@ export function DeleteAccountDialog({
       role="alertdialog"
       maxWidth="max-w-sm"
     >
-      <h2 className="mb-2 text-base font-medium text-danger">
-        Delete account
-      </h2>
+      <h2 className="mb-2 text-base font-medium text-danger">Delete account</h2>
       <p className="mb-5 text-sm text-muted">
         This permanently deletes your account and all your expenses. This
         can&apos;t be undone.
@@ -72,10 +70,19 @@ export function DeleteAccountDialog({
       />
 
       {error && (
-        <p className="mb-4 text-sm text-danger">
-          Couldn&apos;t delete your account. Try signing out and back in,
-          then try again.
-        </p>
+        <div className="mb-4 flex flex-col items-start gap-2">
+          <p className="text-sm text-danger">
+            Couldn&apos;t delete your account. Try signing out and back in, then
+            try again.
+          </p>
+          <button
+            type="button"
+            onClick={logOut}
+            className="rounded-full border border-accent/40 px-4 py-2 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
+          >
+            Log out
+          </button>
+        </div>
       )}
 
       <div className="flex gap-2">

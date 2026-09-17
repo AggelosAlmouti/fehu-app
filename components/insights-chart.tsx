@@ -3,8 +3,8 @@
 import { useId } from "react";
 import type { MonthlyTotal } from "@/lib/data";
 
-const SPEND_COLOR = "#d4a942";
-const INCOME_COLOR = "#eeeeee";
+const SPEND_COLOR = "#eeeeee";
+const INCOME_COLOR = "#d4a942";
 const GRID_COLOR = "#3a3a36";
 
 const WIDTH = 300;
@@ -112,11 +112,11 @@ export function InsightsChart({ points }: { points: MonthlyTotal[] }) {
 
       <div className="mt-2 flex items-center gap-4 text-[11px] text-detail">
         <span className="flex items-center gap-1.5">
-          <span className="size-1.5 rounded-full bg-accent" aria-hidden="true" />
+          <span className="size-1.5 rounded-full bg-foreground" aria-hidden="true" />
           Spending
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="size-1.5 rounded-full bg-foreground" aria-hidden="true" />
+          <span className="size-1.5 rounded-full bg-accent" aria-hidden="true" />
           Income
         </span>
       </div>

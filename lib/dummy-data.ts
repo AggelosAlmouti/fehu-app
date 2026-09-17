@@ -1,4 +1,9 @@
-import { toLocalISODate, type Budget, type Transaction } from "@/lib/data";
+import {
+  toLocalISODate,
+  type Budget,
+  type IncomeSource,
+  type Transaction,
+} from "@/lib/data";
 
 function seededRandom(seed: number) {
   let s = seed;
@@ -8,9 +13,19 @@ function seededRandom(seed: number) {
   };
 }
 
-export function generateDummyData(): { budgets: Budget[]; transactions: Transaction[] } {
+export function generateDummyData(): {
+  budgets: Budget[];
+  transactions: Transaction[];
+  incomeSources: IncomeSource[];
+} {
   const rand = seededRandom(42);
   const now = new Date();
+
+  const incomeSources: IncomeSource[] = [
+    { id: "d-salary", name: "Salary" },
+    { id: "d-freelance", name: "Freelance" },
+    { id: "d-gifts", name: "Gifts" },
+  ];
 
   function monthKeyFor(monthsAgo: number): string {
     const d = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1);
@@ -68,8 +83,35 @@ export function generateDummyData(): { budgets: Budget[]; transactions: Transact
       type: "income",
       title: "Salary",
       amount: salary,
+      sourceId: "d-salary",
       date: dateInMonth(reference.getFullYear(), reference.getMonth(), 1),
     });
+
+    if (rand() > 0.35) {
+      const freelance = Math.round((150 + rand() * 500) * 100) / 100;
+      monthEarned += freelance;
+      transactions.push({
+        id: `d-tx-${txId++}`,
+        type: "income",
+        title: pick(["Freelance project", "Client invoice", "Contract work"]),
+        amount: freelance,
+        sourceId: "d-freelance",
+        date: dateInMonth(reference.getFullYear(), reference.getMonth(), 1 + Math.floor(rand() * activeDays)),
+      });
+    }
+
+    if (rand() > 0.75) {
+      const gift = Math.round((20 + rand() * 100) * 100) / 100;
+      monthEarned += gift;
+      transactions.push({
+        id: `d-tx-${txId++}`,
+        type: "income",
+        title: "From Mom",
+        amount: gift,
+        sourceId: "d-gifts",
+        date: dateInMonth(reference.getFullYear(), reference.getMonth(), 1 + Math.floor(rand() * activeDays)),
+      });
+    }
 
     addExpense("d-rent", "Monthly rent", 950, Math.min(2, activeDays));
 
@@ -145,5 +187,5 @@ export function generateDummyData(): { budgets: Budget[]; transactions: Transact
   }
 
   transactions.sort((a, b) => b.date.localeCompare(a.date));
-  return { budgets, transactions };
+  return { budgets, transactions, incomeSources };
 }

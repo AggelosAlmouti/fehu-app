@@ -3,7 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CalendarDays } from "lucide-react";
-import { relativeDay, todayISO, type Budget, type Transaction } from "@/lib/data";
+import {
+  relativeDay,
+  todayISO,
+  type Budget,
+  type IncomeSource,
+  type Transaction,
+} from "@/lib/data";
 import type { NewTransaction } from "@/lib/use-transactions";
 import { AmountInput } from "@/components/amount-input";
 import { DatePickerSheet } from "@/components/date-picker-sheet";
@@ -15,6 +21,8 @@ export function AddTransactionSheet({
   editing,
   budgets,
   budgetsLoading = false,
+  sources,
+  sourcesLoading = false,
   onClose,
   onAdd,
   onUpdate,
@@ -25,6 +33,9 @@ export function AddTransactionSheet({
   /** Available budgets — shown as pills; required for an expense. */
   budgets: Budget[];
   budgetsLoading?: boolean;
+  /** Available income sources — shown as pills; required for income. */
+  sources: IncomeSource[];
+  sourcesLoading?: boolean;
   onClose: () => void;
   onAdd: (transaction: NewTransaction) => void;
   onUpdate: (id: string, patch: NewTransaction) => void;
@@ -35,6 +46,7 @@ export function AddTransactionSheet({
   const [date, setDate] = useState(todayISO());
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [budgetId, setBudgetId] = useState<string | undefined>(undefined);
+  const [sourceId, setSourceId] = useState<string | undefined>(undefined);
   const amountRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -45,12 +57,14 @@ export function AddTransactionSheet({
       setTitle(editing.title);
       setDate(editing.date);
       setBudgetId(editing.type === "expense" ? editing.budgetId : undefined);
+      setSourceId(editing.type === "income" ? editing.sourceId : undefined);
     } else {
       setTxType("expense");
       setAmount("");
       setTitle("");
       setDate(todayISO());
       setBudgetId(undefined);
+      setSourceId(undefined);
     }
     const t = setTimeout(() => amountRef.current?.focus(), 120);
     return () => clearTimeout(t);
@@ -60,7 +74,8 @@ export function AddTransactionSheet({
   const valid =
     Number.isFinite(parsed) &&
     parsed > 0 &&
-    (txType !== "expense" || budgetId !== undefined);
+    (txType !== "expense" || budgetId !== undefined) &&
+    (txType !== "income" || sourceId !== undefined);
 
   const currentMonth = todayISO().slice(0, 7);
   const pickableBudgets = budgets.filter(
@@ -81,7 +96,13 @@ export function AddTransactionSheet({
             date,
             ...(budgetId ? { budgetId } : {}),
           }
-        : { type: "income", title: finalTitle, amount: parsed, date };
+        : {
+            type: "income",
+            title: finalTitle,
+            amount: parsed,
+            date,
+            ...(sourceId ? { sourceId } : {}),
+          };
     if (editing) onUpdate(editing.id, payload);
     else onAdd(payload);
     onClose();
@@ -92,6 +113,9 @@ export function AddTransactionSheet({
 
   const blockedOnNoBudgets =
     !editing && txType === "expense" && !budgetsLoading && pickableBudgets.length === 0;
+  const blockedOnNoSources =
+    !editing && txType === "income" && !sourcesLoading && sources.length === 0;
+  const blocked = blockedOnNoBudgets || blockedOnNoSources;
 
   return (
     <>
@@ -128,17 +152,19 @@ export function AddTransactionSheet({
             </div>
           )}
 
-          {blockedOnNoBudgets ? (
+          {blocked ? (
             <div className="flex flex-col items-center gap-3 rounded-[var(--radius-card)] border border-border bg-card px-4 py-6 text-center">
               <p className="text-sm text-detail">
-                You need a budget before you can log an expense.
+                {blockedOnNoBudgets
+                  ? "You need a budget before you can log an expense."
+                  : "You need an income source before you can log income."}
               </p>
               <Link
-                href="/budgets?add=1"
+                href={blockedOnNoBudgets ? "/budgets?add=1" : "/budgets?addSource=1"}
                 onClick={onClose}
                 className="rounded-full border border-accent/40 px-4 py-2 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
               >
-                Add a budget
+                {blockedOnNoBudgets ? "Add a budget" : "Add an income source"}
               </Link>
             </div>
           ) : (
@@ -192,6 +218,36 @@ export function AddTransactionSheet({
                             }`}
                           >
                             {b.name}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {txType === "income" && (
+                <div>
+                  <span className="mb-2 block text-xs text-detail">Source</span>
+                  {sourcesLoading ? (
+                    <p className="text-xs text-muted">Loading your income sources…</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {sources.map((s) => {
+                        const active = s.id === sourceId
+                        return (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => setSourceId(s.id)}
+                            aria-pressed={active}
+                            className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
+                              active
+                                ? "border-accent bg-accent text-background"
+                                : "border-border-strong text-detail hover:text-foreground"
+                            }`}
+                          >
+                            {s.name}
                           </button>
                         )
                       })}

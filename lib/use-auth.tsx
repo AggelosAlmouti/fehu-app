@@ -18,6 +18,7 @@ import {
 import { collection, getDocs, writeBatch } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { seedDefaultBudgets } from "@/lib/use-budgets";
+import { seedDefaultIncomeSources } from "@/lib/use-income-sources";
 
 // Firebase Auth's session-restore has an unbounded network round-trip
 // before the first onAuthStateChanged fires (see CLAUDE.md's Auth model).
@@ -94,7 +95,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // creationTime === lastSignInTime only on the very first sign-in.
     const { creationTime, lastSignInTime } = result.user.metadata;
     if (creationTime === lastSignInTime) {
-      await seedDefaultBudgets(result.user.uid);
+      await Promise.all([
+        seedDefaultBudgets(result.user.uid),
+        seedDefaultIncomeSources(result.user.uid),
+      ]);
     }
   }
 
@@ -108,13 +112,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!auth.currentUser) throw new Error("Not signed in yet");
     // Must delete Firestore data while still authenticated.
     const uid = auth.currentUser.uid;
-    const [transactionsSnapshot, budgetsSnapshot] = await Promise.all([
-      getDocs(collection(db, "users", uid, "transactions")),
-      getDocs(collection(db, "users", uid, "budgets")),
-    ]);
+    const [transactionsSnapshot, budgetsSnapshot, incomeSourcesSnapshot] =
+      await Promise.all([
+        getDocs(collection(db, "users", uid, "transactions")),
+        getDocs(collection(db, "users", uid, "budgets")),
+        getDocs(collection(db, "users", uid, "incomeSources")),
+      ]);
     const batch = writeBatch(db);
     transactionsSnapshot.forEach((doc) => batch.delete(doc.ref));
     budgetsSnapshot.forEach((doc) => batch.delete(doc.ref));
+    incomeSourcesSnapshot.forEach((doc) => batch.delete(doc.ref));
     await batch.commit();
     await deleteUser(auth.currentUser);
   }

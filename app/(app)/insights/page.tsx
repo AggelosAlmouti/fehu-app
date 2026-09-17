@@ -6,6 +6,7 @@ import {
   budgetSpendingInPeriod,
   endOfMonthISO,
   formatCurrency,
+  incomeBySourceInPeriod,
   monthlyTotals,
   todayISO,
   type MonthRange,
@@ -26,13 +27,13 @@ import { useDemoAwareData } from "@/lib/use-demo-aware-data";
 type Period = "month" | "q1" | "q2" | "q3" | "q4" | "year" | "all";
 
 const PERIODS: { label: string; value: Period }[] = [
-  { label: "1M", value: "month" },
+  { label: "Month", value: "month" },
   { label: "Q1", value: "q1" },
   { label: "Q2", value: "q2" },
   { label: "Q3", value: "q3" },
   { label: "Q4", value: "q4" },
-  { label: "Full year", value: "year" },
-  { label: "All time", value: "all" },
+  { label: "Year", value: "year" },
+  { label: "All", value: "all" },
 ];
 
 const QUARTER_START_MONTH: Record<"q1" | "q2" | "q3" | "q4", number> = {
@@ -44,9 +45,11 @@ const QUARTER_START_MONTH: Record<"q1" | "q2" | "q3" | "q4", number> = {
 
 function periodToRange(period: Period, browsedMonth: string): MonthRange {
   if (period === "all") return null;
-  if (period === "month") return { startMonth: browsedMonth, endMonth: browsedMonth };
+  if (period === "month")
+    return { startMonth: browsedMonth, endMonth: browsedMonth };
   const year = new Date().getFullYear();
-  if (period === "year") return { startMonth: `${year}-01`, endMonth: `${year}-12` };
+  if (period === "year")
+    return { startMonth: `${year}-01`, endMonth: `${year}-12` };
   const startM = QUARTER_START_MONTH[period];
   return {
     startMonth: `${year}-${String(startM).padStart(2, "0")}`,
@@ -60,6 +63,7 @@ export default function InsightsPage() {
   const {
     transactions,
     budgets,
+    sources,
     updateTransaction,
     deleteTransaction,
     transactionsLoading,
@@ -69,16 +73,31 @@ export default function InsightsPage() {
 
   const [period, setPeriod] = useState<Period>("month");
   const [openBudgetId, setOpenBudgetId] = useState<string | null>(null);
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [editingTransaction, setEditingTransaction] =
+    useState<Transaction | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Transaction | null>(null);
 
-  const [browsedMonth, setBrowsedMonth] = useState(() => todayISO().slice(0, 7));
+  const [browsedMonth, setBrowsedMonth] = useState(() =>
+    todayISO().slice(0, 7),
+  );
   const [historyView, setHistoryView] = useState<"budget" | "date">("budget");
-  const range = useMemo(() => periodToRange(period, browsedMonth), [period, browsedMonth]);
+  const range = useMemo(
+    () => periodToRange(period, browsedMonth),
+    [period, browsedMonth],
+  );
 
-  const points = useMemo(() => monthlyTotals(transactions, range), [transactions, range]);
-  const periodSpent = useMemo(() => points.reduce((s, p) => s + p.spent, 0), [points]);
-  const periodEarned = useMemo(() => points.reduce((s, p) => s + p.earned, 0), [points]);
+  const points = useMemo(
+    () => monthlyTotals(transactions, range),
+    [transactions, range],
+  );
+  const periodSpent = useMemo(
+    () => points.reduce((s, p) => s + p.spent, 0),
+    [points],
+  );
+  const periodEarned = useMemo(
+    () => points.reduce((s, p) => s + p.earned, 0),
+    [points],
+  );
 
   const spending = useMemo(
     () => budgetSpendingInPeriod(budgets, transactions, range),
@@ -89,6 +108,16 @@ export default function InsightsPage() {
     [spending],
   );
   const maxSpent = Math.max(1, ...rankedBudgets.map((b) => b.spent));
+
+  const incomeSpending = useMemo(
+    () => incomeBySourceInPeriod(sources, transactions, range),
+    [sources, transactions, range],
+  );
+  const rankedIncome = useMemo(
+    () => [...incomeSpending].sort((a, b) => b.earned - a.earned),
+    [incomeSpending],
+  );
+  const maxEarned = Math.max(1, ...rankedIncome.map((s) => s.earned));
 
   const monthTransactions = useMemo(() => {
     if (period !== "month") return [];
@@ -101,7 +130,8 @@ export default function InsightsPage() {
 
   const openBudget = budgets.find((b) => b.id === openBudgetId) ?? null;
   const openBudgetTransactions = useMemo(
-    () => spending.find((s) => s.budget.id === openBudgetId)?.transactions ?? [],
+    () =>
+      spending.find((s) => s.budget.id === openBudgetId)?.transactions ?? [],
     [spending, openBudgetId],
   );
 
@@ -109,7 +139,9 @@ export default function InsightsPage() {
     <div className="mx-auto w-full max-w-xl px-5 pb-32 pt-6 md:pt-10">
       {loading && <LoadingPill />}
 
-      <h1 className="mb-8 text-2xl font-medium tracking-tight md:mb-10">Insights</h1>
+      <h1 className="mb-8 text-2xl font-medium tracking-tight md:mb-10">
+        Insights
+      </h1>
 
       {loading ? null : transactions.length === 0 ? (
         <EmptyState icon={ChartLine}>
@@ -144,7 +176,7 @@ export default function InsightsPage() {
             </div>
             <div>
               <div className="mb-0.5 text-xs text-detail">Earned</div>
-              <div className="text-[26px] font-medium leading-tight tracking-tight text-foreground">
+              <div className="text-[26px] font-medium leading-tight tracking-tight text-accent">
                 {formatCurrency(periodEarned, currency)}
               </div>
             </div>
@@ -158,7 +190,10 @@ export default function InsightsPage() {
             {period === "month" && (
               <div className="mb-3 flex items-center justify-between rounded-full border border-border-strong bg-card px-2 py-1">
                 <div className="flex items-center gap-1">
-                  <MonthStepper month={browsedMonth} onChange={setBrowsedMonth} />
+                  <MonthStepper
+                    month={browsedMonth}
+                    onChange={setBrowsedMonth}
+                  />
                 </div>
                 <div className="flex items-center gap-1">
                   <button
@@ -205,7 +240,9 @@ export default function InsightsPage() {
                   ))}
                 </ul>
               ) : (
-                <p className="text-xs text-muted">No transactions this month.</p>
+                <p className="text-xs text-muted">
+                  No transactions this month.
+                </p>
               )
             ) : rankedBudgets.length > 0 ? (
               <div className="flex flex-col gap-2">
@@ -217,7 +254,9 @@ export default function InsightsPage() {
                     className="rounded-[var(--radius-card)] border-[0.5px] border-border px-3.5 py-3 text-left"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-[13px] text-foreground">{budget.name}</span>
+                      <span className="text-[13px] text-foreground">
+                        {budget.name}
+                      </span>
                       <span className="text-[13px] font-medium text-foreground">
                         {formatCurrency(spent, currency)}
                       </span>
@@ -233,6 +272,34 @@ export default function InsightsPage() {
               <p className="text-xs text-muted">No spending in this period.</p>
             )}
           </div>
+
+          {rankedIncome.length > 0 &&
+            !(period === "month" && historyView === "date") && (
+              <div className="mt-8">
+                <div className="mb-3 text-xs text-detail">Income</div>
+                <div className="flex flex-col gap-2">
+                  {rankedIncome.map(({ source, earned }) => (
+                    <div
+                      key={source.id}
+                      className="rounded-[var(--radius-card)] border-[0.5px] border-border px-3.5 py-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[13px] text-foreground">
+                          {source.name}
+                        </span>
+                        <span className="text-[13px] font-medium text-accent">
+                          {formatCurrency(earned, currency)}
+                        </span>
+                      </div>
+                      <div
+                        className="mt-2 h-[3px] rounded-full bg-accent"
+                        style={{ width: `${(earned / maxEarned) * 100}%` }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
         </>
       )}
 
@@ -248,6 +315,7 @@ export default function InsightsPage() {
         open={editingTransaction !== null}
         editing={editingTransaction}
         budgets={budgets}
+        sources={sources}
         onClose={() => setEditingTransaction(null)}
         onAdd={() => {}}
         onUpdate={updateTransaction}
