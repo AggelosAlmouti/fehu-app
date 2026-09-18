@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/button";
 import { Sheet } from "@/components/sheet";
 
 export function ConfirmDialog({
@@ -25,25 +26,17 @@ export function ConfirmDialog({
       ariaLabel={title}
       role="alertdialog"
       maxWidth="max-w-sm"
-      zIndex="z-[60]"
+      zIndex="z-60"
     >
       <h2 className="mb-2 text-base font-medium text-danger">{title}</h2>
-      <p className="mb-5 text-sm text-muted">{description}</p>
+      <p className="mb-5 text-caption">{description}</p>
       <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex-1 rounded-full border border-border-strong py-3 text-sm font-medium text-detail transition-colors hover:text-foreground"
-        >
+        <Button variant="neutral" size="block" className="flex-1" onClick={onCancel}>
           Cancel
-        </button>
-        <button
-          type="button"
-          onClick={onConfirm}
-          className="flex-1 rounded-full bg-danger py-3 text-sm font-medium text-background transition-opacity hover:opacity-90"
-        >
+        </Button>
+        <Button variant="danger" size="block" className="flex-1" onClick={onConfirm}>
           {confirmLabel}
-        </button>
+        </Button>
       </div>
     </Sheet>
   );

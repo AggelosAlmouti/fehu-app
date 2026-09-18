@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { formatCurrency, type Budget, type Transaction } from "@/lib/data";
+import { EmptyNote } from "@/components/empty-note";
+import { Meter } from "@/components/meter";
 import { DeleteTransactionDialog } from "@/components/delete-transaction-dialog";
 import { Sheet } from "@/components/sheet";
 import { SheetHeader } from "@/components/sheet-header";
@@ -47,17 +49,10 @@ export function BudgetDetailSheet({
         <SheetHeader title={budget.name} onClose={onClose} />
 
         <div className="mb-4">
-          <div className="mb-1.5 text-right text-[11px] text-muted">
+          <div className="mb-1.5 text-right text-caption">
             {formatCurrency(spent, currency)} / {formatCurrency(budget.amount, currency)}
           </div>
-          <div className="h-[3px] overflow-hidden rounded-full bg-border">
-            <div
-              className={`h-full rounded-full transition-[width] duration-500 ${
-                overspent ? "bg-danger" : "bg-accent"
-              }`}
-              style={{ width: `${pct}%` }}
-            />
-          </div>
+          <Meter percent={pct} tone={overspent ? "danger" : "accent"} />
         </div>
 
         {sorted.length > 0 ? (
@@ -73,9 +68,7 @@ export function BudgetDetailSheet({
             ))}
           </ul>
         ) : (
-          <p className="py-8 text-center text-sm text-muted">
-            No transactions this month.
-          </p>
+          <EmptyNote>No transactions this month.</EmptyNote>
         )}
       </Sheet>
 

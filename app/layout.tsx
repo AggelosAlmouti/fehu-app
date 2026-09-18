@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
+import { BACKGROUND_COLOR } from "@/lib/theme";
 import { AuthProvider } from "@/lib/use-auth";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 
@@ -10,7 +11,7 @@ const geistSans = Geist({
 });
 
 export const viewport: Viewport = {
-  themeColor: "#141414",
+  themeColor: BACKGROUND_COLOR,
   width: "device-width",
   initialScale: 1,
 };

@@ -1,15 +1,19 @@
-export function Wordmark({ className }: { className?: string }) {
+export function Wordmark({
+  className,
+  hero = false,
+}: {
+  className?: string;
+  hero?: boolean;
+}) {
   return (
-    <div className={className}>
+    <div className={`${hero ? "text-hero" : "text-base"} ${className ?? ""}`}>
       <img
         src="/icons/f-mark.png"
         alt=""
-        className="mr-0.5 inline-block h-[18px] w-auto align-baseline"
+        className="mr-0.5 inline-block h-[1em] w-auto align-baseline"
         aria-hidden="true"
       />
-      <span className="text-lg font-medium tracking-tight text-foreground">
-        ehu
-      </span>
+      <span className="font-medium tracking-tight text-foreground">ehu</span>
     </div>
   );
 }

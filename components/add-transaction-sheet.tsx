@@ -11,6 +11,8 @@ import {
   type Transaction,
 } from "@/lib/data";
 import type { NewTransaction } from "@/lib/use-transactions";
+import { Button, buttonClass } from "@/components/button";
+import { Pill, SegmentedControl } from "@/components/pill";
 import { AmountInput } from "@/components/amount-input";
 import { DatePickerSheet } from "@/components/date-picker-sheet";
 import { Sheet } from "@/components/sheet";
@@ -124,37 +126,19 @@ export function AddTransactionSheet({
 
         <div className="flex flex-col gap-5">
           {!editing && (
-            <div className="flex rounded-full border border-border-strong p-1">
-              <button
-                type="button"
-                onClick={() => setTxType("expense")}
-                aria-pressed={txType === "expense"}
-                className={`flex-1 rounded-full py-1.5 text-xs font-medium transition-colors ${
-                  txType === "expense"
-                    ? "bg-accent text-background"
-                    : "text-detail"
-                }`}
-              >
-                Expense
-              </button>
-              <button
-                type="button"
-                onClick={() => setTxType("income")}
-                aria-pressed={txType === "income"}
-                className={`flex-1 rounded-full py-1.5 text-xs font-medium transition-colors ${
-                  txType === "income"
-                    ? "bg-accent text-background"
-                    : "text-detail"
-                }`}
-              >
-                Income
-              </button>
-            </div>
+            <SegmentedControl
+              value={txType}
+              onChange={setTxType}
+              options={[
+                { value: "expense", label: "Expense" },
+                { value: "income", label: "Income" },
+              ]}
+            />
           )}
 
           {blocked ? (
-            <div className="flex flex-col items-center gap-3 rounded-[var(--radius-card)] border border-border bg-card px-4 py-6 text-center">
-              <p className="text-sm text-detail">
+            <div className="flex flex-col items-center gap-3 card-box bg-card px-4 py-6 text-center">
+              <p className="text-caption">
                 {blockedOnNoBudgets
                   ? "You need a budget before you can log an expense."
                   : "You need an income source before you can log income."}
@@ -162,7 +146,7 @@ export function AddTransactionSheet({
               <Link
                 href={blockedOnNoBudgets ? "/budgets?add=1" : "/budgets?addSource=1"}
                 onClick={onClose}
-                className="rounded-full border border-accent/40 px-4 py-2 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
+                className={buttonClass({ variant: "outline" })}
               >
                 {blockedOnNoBudgets ? "Add a budget" : "Add an income source"}
               </Link>
@@ -171,19 +155,19 @@ export function AddTransactionSheet({
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               <AmountInput value={amount} onChange={setAmount} inputRef={amountRef} />
 
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                className="w-fit"
                 onClick={() => setDatePickerOpen(true)}
-                className="flex w-fit items-center gap-1.5 rounded-full border border-accent/40 px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
               >
-                <CalendarDays className="size-3.5" aria-hidden="true" />
+                <CalendarDays className="size-4" aria-hidden="true" />
                 {relativeDay(date)}
-              </button>
+              </Button>
 
               <div>
                 <label
                   htmlFor="transaction-title"
-                  className="mb-1.5 block text-xs text-detail"
+                  className="mb-1.5 block text-label"
                 >
                   Description (optional)
                 </label>
@@ -192,33 +176,26 @@ export function AddTransactionSheet({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder={txType === "expense" ? "e.g. Corner cafe" : "e.g. Salary"}
-                  className="w-full rounded-[var(--radius-card)] border border-border bg-card px-3.5 py-3 text-base text-foreground outline-none transition-colors placeholder:text-muted focus:border-border-strong"
+                  className="input-field"
                 />
               </div>
 
               {txType === "expense" && (
                 <div>
-                  <span className="mb-2 block text-xs text-detail">Budget</span>
+                  <span className="mb-2 block text-label">Budget</span>
                   {budgetsLoading ? (
-                    <p className="text-xs text-muted">Loading your budgets…</p>
+                    <p className="text-caption">Loading your budgets…</p>
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       {pickableBudgets.map((b) => {
-                        const active = b.id === budgetId
                         return (
-                          <button
+                          <Pill
                             key={b.id}
-                            type="button"
+                            selected={b.id === budgetId}
                             onClick={() => setBudgetId(b.id)}
-                            aria-pressed={active}
-                            className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
-                              active
-                                ? "border-accent bg-accent text-background"
-                                : "border-border-strong text-detail hover:text-foreground"
-                            }`}
                           >
                             {b.name}
-                          </button>
+                          </Pill>
                         )
                       })}
                     </div>
@@ -228,27 +205,20 @@ export function AddTransactionSheet({
 
               {txType === "income" && (
                 <div>
-                  <span className="mb-2 block text-xs text-detail">Source</span>
+                  <span className="mb-2 block text-label">Source</span>
                   {sourcesLoading ? (
-                    <p className="text-xs text-muted">Loading your income sources…</p>
+                    <p className="text-caption">Loading your income sources…</p>
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       {sources.map((s) => {
-                        const active = s.id === sourceId
                         return (
-                          <button
+                          <Pill
                             key={s.id}
-                            type="button"
+                            selected={s.id === sourceId}
                             onClick={() => setSourceId(s.id)}
-                            aria-pressed={active}
-                            className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
-                              active
-                                ? "border-accent bg-accent text-background"
-                                : "border-border-strong text-detail hover:text-foreground"
-                            }`}
                           >
                             {s.name}
-                          </button>
+                          </Pill>
                         )
                       })}
                     </div>
@@ -256,13 +226,15 @@ export function AddTransactionSheet({
                 </div>
               )}
 
-              <button
+              <Button
                 type="submit"
+                variant="solid"
+                size="block"
+                className="mt-1"
                 disabled={!valid}
-                className="mt-1 w-full rounded-full bg-accent py-3.5 text-sm font-medium text-background transition-opacity disabled:opacity-40"
               >
                 {editing ? "Save changes" : heading}
-              </button>
+              </Button>
             </form>
           )}
         </div>

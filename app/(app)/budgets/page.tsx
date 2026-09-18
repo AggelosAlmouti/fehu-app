@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Coins, Pencil, Plus, Trash2, Wallet } from "lucide-react";
 import { formatCurrency, monthLabel, type Budget, type IncomeSource } from "@/lib/data";
+import { Button } from "@/components/button";
+import { IconButton } from "@/components/icon-button";
 import { AddBudgetSheet } from "@/components/add-budget-sheet";
 import { AddIncomeSourceSheet } from "@/components/add-income-source-sheet";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -87,19 +89,15 @@ export default function BudgetsPage() {
       {(loading || sourcesLoading) && <LoadingPill />}
 
       <div className="mb-8 flex items-center justify-between md:mb-10">
-        <h1 className="text-2xl font-medium tracking-tight">Budgets</h1>
-        <button
-          type="button"
-          onClick={openAdd}
-          className="flex shrink-0 items-center gap-1.5 rounded-full border border-accent/40 px-3.5 py-2 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
-        >
-          <Plus className="size-3.5" aria-hidden="true" />
+        <h1 className="text-hero">Budgets</h1>
+        <Button variant="outline" onClick={openAdd}>
+          <Plus className="size-4" aria-hidden="true" />
           Add budget
-        </button>
+        </Button>
       </div>
 
-      <div className="mb-0.5 text-xs text-detail">Total</div>
-      <div className="mb-8 text-[34px] font-medium leading-tight tracking-tight text-foreground">
+      <div className="mb-0.5 text-label">Total</div>
+      <div className="mb-8 text-hero text-foreground">
         {formatCurrency(total, currency)}
       </div>
 
@@ -108,12 +106,12 @@ export default function BudgetsPage() {
           {sorted.map((b, i) => (
             <li
               key={b.id}
-              className={`py-3 ${i === sorted.length - 1 ? "" : "border-b border-border"}`}
+              className={`py-3 ${i === sorted.length - 1 ? "" : "border-b-2 border-border"}`}
             >
               <div className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm text-foreground">{b.name}</div>
-                  <div className="text-xs text-muted">
+                  <div className="truncate text-base text-foreground">{b.name}</div>
+                  <div className="text-caption">
                     {b.cadence === "monthly"
                       ? "Monthly"
                       : b.month
@@ -121,25 +119,11 @@ export default function BudgetsPage() {
                         : "One-time"}
                   </div>
                 </div>
-                <div className="shrink-0 text-sm font-medium text-foreground">
+                <div className="shrink-0 text-base font-medium text-foreground">
                   {formatCurrency(b.amount, currency)}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => openEdit(b)}
-                  aria-label={`Edit ${b.name}`}
-                  className="flex size-8 shrink-0 items-center justify-center rounded-full text-detail transition-colors hover:text-foreground"
-                >
-                  <Pencil className="size-4" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPendingDelete(b)}
-                  aria-label={`Delete ${b.name}`}
-                  className="flex size-8 shrink-0 items-center justify-center rounded-full text-detail transition-colors hover:text-danger"
-                >
-                  <Trash2 className="size-4" aria-hidden="true" />
-                </button>
+                <IconButton icon={Pencil} label={`Edit ${b.name}`} onClick={() => openEdit(b)} />
+                <IconButton icon={Trash2} tone="danger" label={`Delete ${b.name}`} onClick={() => setPendingDelete(b)} />
               </div>
             </li>
           ))}
@@ -151,15 +135,11 @@ export default function BudgetsPage() {
       )}
 
       <div className="mb-3 mt-10 flex items-center justify-between">
-        <h2 className="text-lg font-medium tracking-tight">Income sources</h2>
-        <button
-          type="button"
-          onClick={openAddSource}
-          className="flex shrink-0 items-center gap-1.5 rounded-full border border-accent/40 px-3.5 py-2 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
-        >
-          <Plus className="size-3.5" aria-hidden="true" />
+        <h2 className="text-hero">Income sources</h2>
+        <Button variant="outline" onClick={openAddSource}>
+          <Plus className="size-4" aria-hidden="true" />
           Add source
-        </button>
+        </Button>
       </div>
 
       {sortedSources.length > 0 ? (
@@ -167,28 +147,14 @@ export default function BudgetsPage() {
           {sortedSources.map((s, i) => (
             <li
               key={s.id}
-              className={`py-3 ${i === sortedSources.length - 1 ? "" : "border-b border-border"}`}
+              className={`py-3 ${i === sortedSources.length - 1 ? "" : "border-b-2 border-border"}`}
             >
               <div className="flex items-center gap-3">
-                <div className="min-w-0 flex-1 truncate text-sm text-foreground">
+                <div className="min-w-0 flex-1 truncate text-base text-foreground">
                   {s.name}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => openEditSource(s)}
-                  aria-label={`Edit ${s.name}`}
-                  className="flex size-8 shrink-0 items-center justify-center rounded-full text-detail transition-colors hover:text-foreground"
-                >
-                  <Pencil className="size-4" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPendingDeleteSource(s)}
-                  aria-label={`Delete ${s.name}`}
-                  className="flex size-8 shrink-0 items-center justify-center rounded-full text-detail transition-colors hover:text-danger"
-                >
-                  <Trash2 className="size-4" aria-hidden="true" />
-                </button>
+                <IconButton icon={Pencil} label={`Edit ${s.name}`} onClick={() => openEditSource(s)} />
+                <IconButton icon={Trash2} tone="danger" label={`Delete ${s.name}`} onClick={() => setPendingDeleteSource(s)} />
               </div>
             </li>
           ))}

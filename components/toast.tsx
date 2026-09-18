@@ -21,7 +21,7 @@ export function Toast({
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center px-5 pt-[max(0.75rem,env(safe-area-inset-top))]">
-      <div className="fehu-drop-in pointer-events-auto rounded-full border border-border-strong bg-card px-4 py-2.5 text-center text-xs text-foreground shadow-lg shadow-black/40">
+      <div className="fehu-drop-in pointer-events-auto rounded-full border-2 border-border-strong bg-card px-4 py-2.5 text-center text-base text-foreground floating">
         {message}
       </div>
     </div>

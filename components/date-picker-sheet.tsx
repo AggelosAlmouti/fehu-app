@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { toLocalISODate, todayISO } from "@/lib/data";
+import { IconButton } from "@/components/icon-button";
 import { Sheet } from "@/components/sheet";
 import { SheetHeader } from "@/components/sheet-header";
 
@@ -44,30 +45,24 @@ export function DatePickerSheet({
       <SheetHeader title="Date" onClose={onClose} />
 
       <div className="mb-3 flex items-center justify-between">
-        <button
-          type="button"
+        <IconButton
+          icon={ChevronLeft}
+          label="Previous month"
           onClick={() => setViewMonth(new Date(year, month - 1, 1))}
-          aria-label="Previous month"
-          className="flex size-8 items-center justify-center rounded-full text-detail transition-colors hover:text-foreground"
-        >
-          <ChevronLeft className="size-4" aria-hidden="true" />
-        </button>
-        <span className="text-sm font-medium text-foreground">
+        />
+        <span className="text-base font-medium text-foreground">
           {viewMonth.toLocaleDateString("en-IE", { month: "long", year: "numeric" })}
         </span>
-        <button
-          type="button"
+        <IconButton
+          icon={ChevronRight}
+          label="Next month"
           onClick={() => setViewMonth(new Date(year, month + 1, 1))}
-          aria-label="Next month"
-          className="flex size-8 items-center justify-center rounded-full text-detail transition-colors hover:text-foreground"
-        >
-          <ChevronRight className="size-4" aria-hidden="true" />
-        </button>
+        />
       </div>
 
       <div className="grid grid-cols-7 gap-1">
         {WEEKDAYS.map((w) => (
-          <div key={w} className="py-1 text-center text-xs text-muted">
+          <div key={w} className="py-1 text-center text-caption">
             {w}
           </div>
         ))}
@@ -85,7 +80,7 @@ export function DatePickerSheet({
                 onClose();
               }}
               aria-pressed={selected}
-              className={`flex aspect-square items-center justify-center rounded-full text-sm transition-colors ${
+              className={`flex aspect-square items-center justify-center rounded-full text-base transition-colors ${
                 selected
                   ? "bg-accent text-background"
                   : isToday

@@ -27,7 +27,7 @@ function Step({
 export function InstallInstructions({ status }: { status: "ios" | "other" }) {
   if (status === "ios") {
     return (
-      <ul className="flex flex-col gap-2.5 text-sm text-muted">
+      <ul className="flex flex-col gap-2.5 text-caption">
         <Step icon={Share}>Tap the Share button in your browser</Step>
         <Step icon={Plus}>
           Choose "Add to Home Screen"{" "}
@@ -40,11 +40,11 @@ export function InstallInstructions({ status }: { status: "ios" | "other" }) {
 
   return (
     <div>
-      <ul className="flex flex-col gap-2.5 text-sm text-muted">
+      <ul className="flex flex-col gap-2.5 text-caption">
         <Step icon={Menu}>Open your browser's menu</Step>
         <Step icon={Download}>Choose "Install app" or "Add to Home screen"</Step>
       </ul>
-      <p className="mt-3 text-xs text-detail">
+      <p className="mt-3 text-label">
         See your browser's guide for installing PWAs.
       </p>
     </div>

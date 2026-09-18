@@ -12,6 +12,7 @@ import {
   ChartLine,
   type LucideIcon,
 } from "lucide-react";
+import { buttonClass } from "@/components/button";
 import { Wordmark } from "@/components/wordmark";
 
 const FEATURES: { icon: LucideIcon; title: string; description: string }[] = [
@@ -76,65 +77,65 @@ export default function LandingPage() {
   return (
     <main className="min-h-dvh">
       <section className="mx-auto flex max-w-2xl flex-col items-center px-5 pb-16 pt-20 text-center md:pt-28">
-        <Wordmark className="mb-8 text-2xl" />
+        <Wordmark hero className="mb-8" />
         <h1 className="text-balance text-4xl font-medium tracking-tight text-foreground md:text-5xl">
           Finally a budget app that doesn't suck...
         </h1>
-        <p className="mt-4 max-w-md text-pretty text-sm text-muted md:text-base">
+        <p className="mt-4 max-w-md text-pretty text-caption">
           Fehu is a clutter-free budget tracker. Just add your budgets and log
           your expenses. Track them. <br />
           That's it.
         </p>
         <Link
           href="/dashboard"
-          className="mt-8 rounded-full bg-accent px-6 py-3 text-sm font-medium text-background transition-opacity hover:opacity-90"
+          className={buttonClass({ variant: "solid", className: "mt-8" })}
         >
           Get the app
         </Link>
       </section>
 
       <section className="mx-auto max-w-3xl px-5 py-16">
-        <h2 className="mb-8 text-center text-2xl font-medium tracking-tight text-foreground">
+        <h2 className="mb-8 text-center text-hero text-foreground">
           What can Fehu do for you?
         </h2>
         <div className="grid gap-4 sm:grid-cols-2">
           {FEATURES.map(({ icon: Icon, title, description }) => (
             <div
               key={title}
-              className="rounded-[var(--radius-card)] border border-border bg-surface p-5"
+              className="card-box bg-surface p-5"
             >
               <div className="mb-3 flex size-10 items-center justify-center rounded-full bg-card">
                 <Icon className="size-5 text-accent" aria-hidden="true" />
               </div>
-              <h3 className="mb-1 text-sm font-medium text-foreground">{title}</h3>
-              <p className="text-sm text-muted">{description}</p>
+              <h3 className="mb-1 text-base font-medium text-foreground">{title}</h3>
+              <p className="text-caption">{description}</p>
             </div>
           ))}
         </div>
       </section>
 
       <section className="mx-auto max-w-2xl px-5 pb-24 pt-8">
-        <h2 className="mb-6 text-center text-2xl font-medium tracking-tight text-foreground">
+        <h2 className="mb-8 text-center text-hero text-foreground">
           Frequently asked questions
         </h2>
         <div className="flex flex-col">
           {QUESTIONS.map(({ q, a }, i) => {
             const open = openIndex === i;
             return (
-              <div key={q} className={i === QUESTIONS.length - 1 ? "" : "border-b border-border"}>
+              <div key={q} className={i === QUESTIONS.length - 1 ? "" : "border-b-2 border-border"}>
                 <button
                   type="button"
                   onClick={() => setOpenIndex(open ? null : i)}
                   aria-expanded={open}
                   className="flex w-full items-center justify-between gap-3 py-4 text-left"
                 >
-                  <span className="text-sm font-medium text-foreground">{q}</span>
+                  <span className="text-base font-medium text-foreground">{q}</span>
                   <ChevronDown
                     className={`size-4 shrink-0 text-detail transition-transform ${open ? "rotate-180" : ""}`}
                     aria-hidden="true"
                   />
                 </button>
-                {open && <p className="pb-4 text-sm text-muted">{a}</p>}
+                {open && <p className="pb-4 text-caption">{a}</p>}
               </div>
             );
           })}

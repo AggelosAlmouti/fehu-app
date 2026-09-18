@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { IncomeSource } from "@/lib/data";
 import type { NewIncomeSource } from "@/lib/use-income-sources";
+import { Button } from "@/components/button";
 import { Sheet } from "@/components/sheet";
 import { SheetHeader } from "@/components/sheet-header";
 
@@ -61,7 +62,7 @@ export function AddIncomeSourceSheet({
         <div>
           <label
             htmlFor="income-source-name"
-            className="mb-1.5 block text-xs text-detail"
+            className="mb-1.5 block text-label"
           >
             Name
           </label>
@@ -72,22 +73,18 @@ export function AddIncomeSourceSheet({
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Freelance"
             maxLength={MAX_NAME_LENGTH}
-            className="w-full rounded-[var(--radius-card)] border border-border bg-card px-3.5 py-3 text-base text-foreground outline-none transition-colors placeholder:text-muted focus:border-border-strong"
+            className="input-field"
           />
           {duplicate && (
-            <p className="mt-1.5 text-xs text-danger">
+            <p className="mt-1.5 text-base text-danger">
               You already have an income source named "{trimmedName}".
             </p>
           )}
         </div>
 
-        <button
-          type="submit"
-          disabled={!valid}
-          className="mt-1 w-full rounded-full bg-accent py-3.5 text-sm font-medium text-background transition-opacity disabled:opacity-40"
-        >
+        <Button type="submit" variant="solid" size="block" className="mt-1" disabled={!valid}>
           {editing ? "Save changes" : "Add income source"}
-        </button>
+        </Button>
       </form>
     </Sheet>
   );

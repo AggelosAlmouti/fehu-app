@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/use-auth";
+import { Button } from "@/components/button";
 import { Sheet } from "@/components/sheet";
 
 export function DeleteAccountDialog({
@@ -48,14 +49,14 @@ export function DeleteAccountDialog({
       maxWidth="max-w-sm"
     >
       <h2 className="mb-2 text-base font-medium text-danger">Delete account</h2>
-      <p className="mb-5 text-sm text-muted">
+      <p className="mb-5 text-caption">
         This permanently deletes your account and all your expenses. This
         can&apos;t be undone.
       </p>
 
       <label
         htmlFor="delete-confirm"
-        className="mb-1.5 block text-xs text-detail"
+        className="mb-1.5 block text-label"
       >
         Type <span className="font-medium text-foreground">delete</span> to
         confirm
@@ -66,41 +67,34 @@ export function DeleteAccountDialog({
         onChange={(e) => setConfirmText(e.target.value)}
         autoFocus
         autoComplete="off"
-        className="mb-5 w-full rounded-[var(--radius-card)] border border-border bg-card px-3.5 py-3 text-base text-foreground outline-none transition-colors placeholder:text-muted focus:border-border-strong"
+        className="mb-5 input-field"
       />
 
       {error && (
         <div className="mb-4 flex flex-col items-start gap-2">
-          <p className="text-sm text-danger">
+          <p className="text-base text-danger">
             Couldn&apos;t delete your account. Try signing out and back in, then
             try again.
           </p>
-          <button
-            type="button"
-            onClick={logOut}
-            className="rounded-full border border-accent/40 px-4 py-2 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
-          >
+          <Button variant="outline" onClick={logOut}>
             Log out
-          </button>
+          </Button>
         </div>
       )}
 
       <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={onClose}
-          className="flex-1 rounded-full border border-border-strong py-3 text-sm font-medium text-detail transition-colors hover:text-foreground"
-        >
+        <Button variant="neutral" size="block" className="flex-1" onClick={onClose}>
           Cancel
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="danger"
+          size="block"
+          className="flex-1"
           onClick={handleDelete}
           disabled={!canDelete || deleting}
-          className="flex-1 rounded-full bg-danger py-3 text-sm font-medium text-background transition-opacity disabled:opacity-40"
         >
           {deleting ? "Deleting…" : "Delete"}
-        </button>
+        </Button>
       </div>
     </Sheet>
   );

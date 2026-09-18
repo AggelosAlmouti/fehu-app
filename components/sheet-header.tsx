@@ -1,5 +1,6 @@
 "use client";
 
+import { IconButton } from "@/components/icon-button";
 import { X } from "lucide-react";
 
 export function SheetHeader({
@@ -16,14 +17,7 @@ export function SheetHeader({
       <h2 className={`text-base font-medium${capitalize ? " capitalize" : ""}`}>
         {title}
       </h2>
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Close"
-        className="flex size-8 items-center justify-center rounded-full text-detail transition-colors hover:text-foreground"
-      >
-        <X className="size-5" aria-hidden="true" />
-      </button>
+      <IconButton icon={X} label="Close" onClick={onClose} />
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { LogOut, Menu, X } from "lucide-react";
 import { navItems } from "@/lib/nav";
 import { useAuth } from "@/lib/use-auth";
 import { Wordmark } from "@/components/wordmark";
+import { IconButton } from "@/components/icon-button";
 import { InstallPromptDialog } from "@/components/install-prompt-dialog";
 import { Toast } from "@/components/toast";
 import { useInstallPrompt } from "@/lib/use-install-prompt";
@@ -37,6 +38,15 @@ declare global {
   }
 }
 
+// Shared by the nav links and the log-out row so they can't drift apart.
+function navItemClass(active: boolean) {
+  return `flex w-full items-center gap-3 rounded-card px-3 py-2.5 text-base transition-colors ${
+    active
+      ? "bg-card text-foreground"
+      : "text-detail hover:bg-card/60 hover:text-foreground"
+  }`;
+}
+
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   return (
@@ -51,14 +61,10 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             replace
             onClick={onNavigate}
             aria-current={active ? "page" : undefined}
-            className={`flex items-center gap-3 rounded-[var(--radius-card)] px-3 py-2.5 text-sm transition-colors ${
-              active
-                ? "bg-card text-foreground"
-                : "text-detail hover:bg-card/60 hover:text-foreground"
-            }`}
+            className={navItemClass(active)}
           >
             <Icon
-              className={`size-[18px] shrink-0 ${active ? "text-accent" : ""}`}
+              className={`size-5 shrink-0 ${active ? "text-accent" : ""}`}
               aria-hidden="true"
             />
             {item.label}
@@ -151,14 +157,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         />
         <Wordmark />
         {!isOnline ? (
-          <p className="max-w-xs text-sm text-muted">
+          <p className="max-w-xs text-caption">
             No internet connection. Connect to the internet to sign in.
           </p>
         ) : (
           <>
             <div id="google-signin-button" />
             {signInError && (
-              <p className="max-w-xs text-sm text-danger">
+              <p className="max-w-xs text-base text-danger">
                 Sign in failed. Check your connection and try again.
               </p>
             )}
@@ -182,19 +188,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
 
       <div className="md:flex">
-        <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-border px-4 py-6 md:flex">
+        <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r-2 border-border px-4 py-6 md:flex">
           <Wordmark className="mb-8 px-3" />
           <NavLinks />
-          <div className="mt-auto border-t border-border pt-3">
-            <div className="truncate px-3 pb-2 text-xs text-muted">
+          <div className="mt-auto border-t-2 border-border pt-3">
+            <div className="truncate px-3 pb-2 text-caption">
               {effectiveUser?.email}
             </div>
             <button
               type="button"
               onClick={logOut}
-              className="flex w-full items-center gap-3 rounded-[var(--radius-card)] px-3 py-2.5 text-sm text-detail transition-colors hover:bg-card/60 hover:text-foreground"
+              className={navItemClass(false)}
             >
-              <LogOut className="size-[18px] shrink-0" aria-hidden="true" />
+              <LogOut className="size-5 shrink-0" aria-hidden="true" />
               Log out
             </button>
           </div>
@@ -202,15 +208,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* No wordmark here — only in the drawer. */}
         <header className="flex items-center px-5 pt-5 md:hidden">
-          <button
-            type="button"
-            onClick={() => setMenuOpen(true)}
-            aria-label="Open menu"
+          <IconButton
+            icon={Menu}
+            size="lg"
+            label="Open menu"
             aria-expanded={menuOpen}
-            className="-ml-2 flex size-10 items-center justify-center rounded-full text-detail transition-colors hover:text-foreground"
-          >
-            <Menu className="size-[22px]" aria-hidden="true" />
-          </button>
+            className="-ml-2"
+            onClick={() => setMenuOpen(true)}
+          />
         </header>
 
         {menuOpen && (
@@ -219,23 +224,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               type="button"
               aria-label="Close menu"
               onClick={() => setMenuOpen(false)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              className="scrim"
             />
-            <div className="fehu-slide-in absolute left-0 top-0 flex h-full w-72 max-w-[80%] flex-col border-r border-border bg-background px-4 py-6 shadow-2xl">
+            <div className="fehu-slide-in absolute left-0 top-0 flex h-full w-72 max-w-4/5 flex-col border-r-2 border-border bg-background px-4 py-6">
               <div className="mb-8 flex items-center justify-between px-3">
-                <button
-                  type="button"
+                <IconButton
+                  icon={X}
+                  label="Close menu"
                   onClick={() => setMenuOpen(false)}
-                  aria-label="Close menu"
-                  className="flex size-9 items-center justify-center rounded-full text-detail transition-colors hover:text-foreground"
-                >
-                  <X className="size-5" aria-hidden="true" />
-                </button>
+                />
                 <Wordmark />
               </div>
               <NavLinks onNavigate={() => setMenuOpen(false)} />
-              <div className="mt-auto border-t border-border pt-3">
-                <div className="truncate px-3 pb-2 text-xs text-muted">
+              <div className="mt-auto border-t-2 border-border pt-3">
+                <div className="truncate px-3 pb-2 text-caption">
                   {effectiveUser?.email}
                 </div>
                 <button
@@ -244,9 +246,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     setMenuOpen(false);
                     logOut();
                   }}
-                  className="flex w-full items-center gap-3 rounded-[var(--radius-card)] px-3 py-2.5 text-sm text-detail transition-colors hover:bg-card/60 hover:text-foreground"
+                  className={navItemClass(false)}
                 >
-                  <LogOut className="size-[18px] shrink-0" aria-hidden="true" />
+                  <LogOut className="size-5 shrink-0" aria-hidden="true" />
                   Log out
                 </button>
               </div>

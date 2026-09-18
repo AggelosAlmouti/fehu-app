@@ -76,7 +76,7 @@ export function AmountInput({
 
   return (
     <div className="relative">
-      <span className="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 whitespace-nowrap text-2xl font-medium text-detail">
+      <span className="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 whitespace-nowrap text-hero text-detail">
         {currencyMap[currency].symbol}
       </span>
       <div className="flex justify-center">
@@ -88,7 +88,7 @@ export function AmountInput({
           onChange={handleChange}
           onBlur={handleBlur}
           aria-label="Amount"
-          className="w-[11ch] max-w-full bg-transparent text-center text-4xl font-medium text-foreground outline-none placeholder:text-border-strong"
+          className="w-[11ch] max-w-full bg-transparent text-center text-hero text-foreground outline-none placeholder:text-border-strong"
         />
       </div>
     </div>

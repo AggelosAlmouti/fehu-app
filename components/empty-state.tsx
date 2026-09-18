@@ -9,11 +9,11 @@ export function EmptyState({
   children: ReactNode
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-[var(--radius-card)] border border-border bg-surface px-6 py-16 text-center">
+    <div className="flex flex-col items-center justify-center card-box bg-surface px-6 py-16 text-center">
       <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-card">
         <Icon className="size-6 text-accent" aria-hidden="true" />
       </div>
-      <p className="max-w-xs text-pretty text-sm text-muted">{children}</p>
+      <p className="max-w-xs text-pretty text-caption">{children}</p>
     </div>
   )
 }

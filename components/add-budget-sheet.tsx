@@ -5,6 +5,7 @@ import { todayISO, type Budget, type BudgetCadence } from "@/lib/data";
 import type { NewBudget } from "@/lib/use-budgets";
 import { AmountInput } from "@/components/amount-input";
 import { MonthStepper } from "@/components/month-stepper";
+import { Button } from "@/components/button";
 import { Sheet } from "@/components/sheet";
 import { SheetHeader } from "@/components/sheet-header";
 
@@ -89,7 +90,7 @@ export function AddBudgetSheet({
         <div>
           <label
             htmlFor="budget-name"
-            className="mb-1.5 block text-xs text-detail"
+            className="mb-1.5 block text-label"
           >
             Name
           </label>
@@ -99,17 +100,17 @@ export function AddBudgetSheet({
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Groceries"
             maxLength={MAX_NAME_LENGTH}
-            className="w-full rounded-[var(--radius-card)] border border-border bg-card px-3.5 py-3 text-base text-foreground outline-none transition-colors placeholder:text-muted focus:border-border-strong"
+            className="input-field"
           />
           {duplicate && (
-            <p className="mt-1.5 text-xs text-danger">
+            <p className="mt-1.5 text-base text-danger">
               You already have a budget named "{trimmedName}".
             </p>
           )}
         </div>
 
         <div>
-          <span className="mb-1.5 block text-xs text-detail">Repeats</span>
+          <span className="mb-1.5 block text-label">Repeats</span>
           <div className="flex items-center gap-2.5">
             <button
               type="button"
@@ -129,29 +130,25 @@ export function AddBudgetSheet({
                 }`}
               />
             </button>
-            <span className="text-sm text-foreground">
+            <span className="text-base text-foreground">
               {cadence === "monthly" ? "Every month" : "One month only"}
             </span>
           </div>
-          <p className="mt-1.5 text-xs text-muted">
+          <p className="mt-1.5 text-caption">
             {cadence === "monthly"
               ? "Resets to zero at the start of each month."
               : "For a trip or other one-off spending — only counts expenses in the month below, then disappears from the dashboard."}
           </p>
           {cadence === "one-time" && (
-            <div className="mt-3 flex items-center justify-between rounded-[var(--radius-card)] border border-border px-3 py-2">
+            <div className="mt-3 flex items-center justify-between card-box px-3 py-2">
               <MonthStepper month={month} onChange={setMonth} />
             </div>
           )}
         </div>
 
-        <button
-          type="submit"
-          disabled={!valid}
-          className="mt-1 w-full rounded-full bg-accent py-3.5 text-sm font-medium text-background transition-opacity disabled:opacity-40"
-        >
+        <Button type="submit" variant="solid" size="block" className="mt-1" disabled={!valid}>
           {editing ? "Save changes" : "Add budget"}
-        </button>
+        </Button>
       </form>
     </Sheet>
   );

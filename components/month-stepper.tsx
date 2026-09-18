@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { IconButton } from "@/components/icon-button";
 import { monthLabel, shiftMonthKey } from "@/lib/data";
 
 export function MonthStepper({
@@ -12,23 +13,17 @@ export function MonthStepper({
 }) {
   return (
     <>
-      <button
-        type="button"
+      <IconButton
+        icon={ChevronLeft}
+        label="Previous month"
         onClick={() => onChange(shiftMonthKey(month, -1))}
-        aria-label="Previous month"
-        className="flex size-7 items-center justify-center rounded-full text-detail transition-colors hover:text-foreground"
-      >
-        <ChevronLeft className="size-4" aria-hidden="true" />
-      </button>
-      <span className="text-sm font-medium text-foreground">{monthLabel(month)}</span>
-      <button
-        type="button"
+      />
+      <span className="text-base font-medium text-foreground">{monthLabel(month)}</span>
+      <IconButton
+        icon={ChevronRight}
+        label="Next month"
         onClick={() => onChange(shiftMonthKey(month, 1))}
-        aria-label="Next month"
-        className="flex size-7 items-center justify-center rounded-full text-detail transition-colors hover:text-foreground"
-      >
-        <ChevronRight className="size-4" aria-hidden="true" />
-      </button>
+      />
     </>
   );
 }

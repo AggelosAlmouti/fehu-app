@@ -88,7 +88,7 @@ export function Sheet({
         type="button"
         aria-label="Close"
         onClick={onClose}
-        className="fehu-fade-in absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="fehu-fade-in scrim"
       />
       <div
         ref={dialogRef}
@@ -96,7 +96,7 @@ export function Sheet({
         role={role}
         aria-modal="true"
         aria-label={ariaLabel}
-        className={`fehu-slide-up relative w-full ${maxWidth} rounded-t-3xl border border-border bg-surface px-5 pb-8 pt-5 outline-none sm:rounded-3xl sm:pb-6 ${
+        className={`fehu-slide-up relative w-full ${maxWidth} rounded-t-3xl border-2 border-border bg-surface px-5 pb-8 pt-5 outline-none sm:rounded-3xl sm:pb-6 ${
           scrollable ? "flex max-h-[80vh] flex-col" : ""
         }`}
       >

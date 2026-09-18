@@ -15,10 +15,14 @@ import {
 import { AddTransactionSheet } from "@/components/add-transaction-sheet";
 import { BudgetDetailSheet } from "@/components/budget-detail-sheet";
 import { DeleteTransactionDialog } from "@/components/delete-transaction-dialog";
+import { EmptyNote } from "@/components/empty-note";
 import { EmptyState } from "@/components/empty-state";
+import { IconToggleGroup } from "@/components/icon-toggle-group";
 import { InsightsChart } from "@/components/insights-chart";
 import { LoadingPill } from "@/components/loading-pill";
+import { Meter } from "@/components/meter";
 import { MonthStepper } from "@/components/month-stepper";
+import { Pill } from "@/components/pill";
 import { TransactionRow } from "@/components/transaction-row";
 import { useAuth } from "@/lib/use-auth";
 import { useCurrency } from "@/lib/use-currency";
@@ -139,7 +143,7 @@ export default function InsightsPage() {
     <div className="mx-auto w-full max-w-xl px-5 pb-32 pt-6 md:pt-10">
       {loading && <LoadingPill />}
 
-      <h1 className="mb-8 text-2xl font-medium tracking-tight md:mb-10">
+      <h1 className="mb-8 text-hero md:mb-10">
         Insights
       </h1>
 
@@ -151,78 +155,52 @@ export default function InsightsPage() {
         <>
           <div className="mb-4 flex flex-wrap gap-1.5">
             {PERIODS.map((p) => (
-              <button
+              <Pill
                 key={p.label}
-                type="button"
+                selected={period === p.value}
                 onClick={() => setPeriod(p.value)}
-                aria-pressed={period === p.value}
-                className={`rounded-full px-3 py-1 text-[11px] font-medium transition-colors ${
-                  period === p.value
-                    ? "bg-accent text-background"
-                    : "border border-border-strong text-detail hover:text-foreground"
-                }`}
               >
                 {p.label}
-              </button>
+              </Pill>
             ))}
           </div>
 
-          <div className="mb-5 flex items-end gap-6">
+          <div className="mb-5 flex flex-wrap items-end gap-x-6 gap-y-3">
             <div>
-              <div className="mb-0.5 text-xs text-detail">Spent</div>
-              <div className="text-[26px] font-medium leading-tight tracking-tight text-foreground">
+              <div className="mb-0.5 text-label">Spent</div>
+              <div className="text-hero text-foreground">
                 {formatCurrency(periodSpent, currency)}
               </div>
             </div>
             <div>
-              <div className="mb-0.5 text-xs text-detail">Earned</div>
-              <div className="text-[26px] font-medium leading-tight tracking-tight text-accent">
+              <div className="mb-0.5 text-label">Earned</div>
+              <div className="text-hero text-accent">
                 {formatCurrency(periodEarned, currency)}
               </div>
             </div>
           </div>
 
-          <div className="rounded-[var(--radius-card)] border border-border p-4">
+          <div className="card-box p-4">
             <InsightsChart points={points} />
           </div>
 
           <div className="mt-8">
             {period === "month" && (
-              <div className="mb-3 flex items-center justify-between rounded-full border border-border-strong bg-card px-2 py-1">
+              <div className="mb-3 flex items-center justify-between rounded-full border-2 border-border-strong bg-card px-2 py-1">
                 <div className="flex items-center gap-1">
                   <MonthStepper
                     month={browsedMonth}
                     onChange={setBrowsedMonth}
                   />
                 </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setHistoryView("budget")}
-                    aria-pressed={historyView === "budget"}
-                    aria-label="Group by budget"
-                    className={`flex size-6 items-center justify-center rounded-full transition-colors ${
-                      historyView === "budget"
-                        ? "bg-accent text-background"
-                        : "text-detail hover:text-foreground"
-                    }`}
-                  >
-                    <Wallet className="size-3.5" aria-hidden="true" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setHistoryView("date")}
-                    aria-pressed={historyView === "date"}
-                    aria-label="List by date"
-                    className={`flex size-6 items-center justify-center rounded-full transition-colors ${
-                      historyView === "date"
-                        ? "bg-accent text-background"
-                        : "text-detail hover:text-foreground"
-                    }`}
-                  >
-                    <List className="size-3.5" aria-hidden="true" />
-                  </button>
-                </div>
+                <IconToggleGroup
+                  value={historyView}
+                  onChange={setHistoryView}
+                  options={[
+                    { value: "budget", icon: Wallet, label: "Group by budget" },
+                    { value: "date", icon: List, label: "List by date" },
+                  ]}
+                />
               </div>
             )}
 
@@ -240,9 +218,7 @@ export default function InsightsPage() {
                   ))}
                 </ul>
               ) : (
-                <p className="text-xs text-muted">
-                  No transactions this month.
-                </p>
+                <EmptyNote>No transactions this month.</EmptyNote>
               )
             ) : rankedBudgets.length > 0 ? (
               <div className="flex flex-col gap-2">
@@ -251,50 +227,44 @@ export default function InsightsPage() {
                     key={budget.id}
                     type="button"
                     onClick={() => setOpenBudgetId(budget.id)}
-                    className="rounded-[var(--radius-card)] border-[0.5px] border-border px-3.5 py-3 text-left"
+                    className="card-box px-3.5 py-3 text-left"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[13px] text-foreground">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="min-w-0 truncate text-base text-foreground">
                         {budget.name}
                       </span>
-                      <span className="text-[13px] font-medium text-foreground">
+                      <span className="shrink-0 text-base font-medium text-foreground">
                         {formatCurrency(spent, currency)}
                       </span>
                     </div>
-                    <div
-                      className="mt-2 h-[3px] rounded-full bg-accent"
-                      style={{ width: `${(spent / maxSpent) * 100}%` }}
-                    />
+                    <Meter className="mt-2" percent={(spent / maxSpent) * 100} />
                   </button>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-muted">No spending in this period.</p>
+              <EmptyNote>No spending in this period.</EmptyNote>
             )}
           </div>
 
           {rankedIncome.length > 0 &&
             !(period === "month" && historyView === "date") && (
               <div className="mt-8">
-                <div className="mb-3 text-xs text-detail">Income</div>
+                <div className="mb-3 text-label">Income</div>
                 <div className="flex flex-col gap-2">
                   {rankedIncome.map(({ source, earned }) => (
                     <div
                       key={source.id}
-                      className="rounded-[var(--radius-card)] border-[0.5px] border-border px-3.5 py-3"
+                      className="card-box px-3.5 py-3"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[13px] text-foreground">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="min-w-0 truncate text-base text-foreground">
                           {source.name}
                         </span>
-                        <span className="text-[13px] font-medium text-accent">
+                        <span className="shrink-0 text-base font-medium text-accent">
                           {formatCurrency(earned, currency)}
                         </span>
                       </div>
-                      <div
-                        className="mt-2 h-[3px] rounded-full bg-accent"
-                        style={{ width: `${(earned / maxEarned) * 100}%` }}
-                      />
+                      <Meter className="mt-2" percent={(earned / maxEarned) * 100} />
                     </div>
                   ))}
                 </div>

@@ -3,9 +3,13 @@
 import { useId } from "react";
 import type { MonthlyTotal } from "@/lib/data";
 
-const SPEND_COLOR = "#eeeeee";
-const INCOME_COLOR = "#d4a942";
-const GRID_COLOR = "#3a3a36";
+// Colors come from the theme tokens (via inline style — CSS variables aren't
+// reliable inside SVG presentation attributes) so the chart can't drift.
+const SPEND_COLOR = "var(--foreground)";
+const INCOME_COLOR = "var(--accent)";
+const GRID_COLOR = "var(--border-strong)";
+const AXIS_COLOR = "var(--muted)";
+const MARKER_OUTLINE = "var(--background)";
 
 const WIDTH = 300;
 const PAD_LEFT = 14;
@@ -57,8 +61,8 @@ export function InsightsChart({ points }: { points: MonthlyTotal[] }) {
       >
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={SPEND_COLOR} stopOpacity="0.22" />
-            <stop offset="100%" stopColor={SPEND_COLOR} stopOpacity="0" />
+            <stop offset="0%" style={{ stopColor: SPEND_COLOR }} stopOpacity="0.22" />
+            <stop offset="100%" style={{ stopColor: SPEND_COLOR }} stopOpacity="0" />
           </linearGradient>
         </defs>
 
@@ -69,7 +73,7 @@ export function InsightsChart({ points }: { points: MonthlyTotal[] }) {
             y1={y(value)}
             x2={WIDTH - PAD_RIGHT}
             y2={y(value)}
-            stroke={GRID_COLOR}
+            style={{ stroke: GRID_COLOR }}
             strokeWidth="1"
             strokeDasharray="2,3"
           />
@@ -78,7 +82,7 @@ export function InsightsChart({ points }: { points: MonthlyTotal[] }) {
         {points.map(
           (p, i) =>
             (i % labelStep === 0 || i === lastIndex) && (
-              <text key={p.key} x={x(i)} y={HEIGHT - 4} textAnchor="middle" fontSize="8" fill="#6f6f6b">
+              <text key={p.key} x={x(i)} y={HEIGHT - 4} textAnchor="middle" fontSize="8" style={{ fill: AXIS_COLOR }}>
                 {p.label}
               </text>
             ),
@@ -89,7 +93,7 @@ export function InsightsChart({ points }: { points: MonthlyTotal[] }) {
           <path
             d={earnedPath}
             fill="none"
-            stroke={INCOME_COLOR}
+            style={{ stroke: INCOME_COLOR }}
             strokeWidth="2"
             strokeOpacity="0.7"
             strokeLinejoin="round"
@@ -100,17 +104,17 @@ export function InsightsChart({ points }: { points: MonthlyTotal[] }) {
           <path
             d={spentPath}
             fill="none"
-            stroke={SPEND_COLOR}
+            style={{ stroke: SPEND_COLOR }}
             strokeWidth="2"
             strokeLinejoin="round"
             strokeLinecap="round"
           />
         )}
-        <circle cx={x(lastIndex)} cy={y(points[lastIndex].earned)} r="4" fill={INCOME_COLOR} stroke="#1a1a18" strokeWidth="2" />
-        <circle cx={x(lastIndex)} cy={y(points[lastIndex].spent)} r="4" fill={SPEND_COLOR} stroke="#1a1a18" strokeWidth="2" />
+        <circle cx={x(lastIndex)} cy={y(points[lastIndex].earned)} r="4" style={{ fill: INCOME_COLOR, stroke: MARKER_OUTLINE }} strokeWidth="2" />
+        <circle cx={x(lastIndex)} cy={y(points[lastIndex].spent)} r="4" style={{ fill: SPEND_COLOR, stroke: MARKER_OUTLINE }} strokeWidth="2" />
       </svg>
 
-      <div className="mt-2 flex items-center gap-4 text-[11px] text-detail">
+      <div className="mt-2 flex items-center gap-4 text-label">
         <span className="flex items-center gap-1.5">
           <span className="size-1.5 rounded-full bg-foreground" aria-hidden="true" />
           Spending

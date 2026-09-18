@@ -1,17 +1,21 @@
 @import "tailwindcss";
 
+/* Source of truth for design tokens. --background is mirrored in
+   lib/theme.ts (metadata/manifest can't read CSS vars) — `npm run check:style`
+   verifies they match. */
 :root {
   --background: #141414;
   --foreground: #eeeeee;
   --accent: #d4a942;
   --danger: #e2584c;
-  --detail: #8a8a86;
-  --muted: #6f6f6b;
+  --detail: #a3a39e;
+  --muted: #8a8a86;
   --border: #232320;
   --border-strong: #3a3a36;
   --card: #1e1e1c;
   --surface: #1a1a18;
   --radius: 0.875rem;
+  --motion-ui: 0.2s;
 }
 
 @theme inline {
@@ -29,12 +33,61 @@
   --font-sans: var(--font-geist-sans);
 }
 
+/* Semantic style utilities — use these instead of re-spelling the recipe,
+   so a design change is one edit here. See CLAUDE.md's Styling section. */
+@utility text-label {
+  @apply text-sm text-detail;
+}
+@utility text-caption {
+  @apply text-sm text-muted;
+}
+@utility text-hero {
+  @apply text-3xl font-medium leading-tight tracking-tight;
+}
+@utility card-box {
+  @apply rounded-card border-2 border-border;
+}
+@utility input-field {
+  @apply w-full rounded-card border-2 border-border bg-card px-3.5 py-3 text-base text-foreground outline-none transition-colors placeholder:text-muted focus:border-accent;
+}
+@utility floating {
+  @apply shadow-lg shadow-black/40;
+}
+@utility scrim {
+  @apply absolute inset-0 bg-black/60 backdrop-blur-sm;
+}
+
 @media (pointer: fine) {
   * {
     cursor:
       url("/cursor.svg") 4 4,
       pointer !important;
   }
+  input,
+  textarea {
+    cursor: text !important;
+  }
+  :disabled {
+    cursor: not-allowed !important;
+  }
+}
+
+/* Hide scrollbars everywhere — scrolling itself still works, just no
+   visible track/thumb, on any platform (mobile Safari included). */
+* {
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* One visible keyboard-focus ring for every button and link. Inputs show
+   focus via their border instead (input-field). */
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 html,
@@ -62,7 +115,7 @@ body {
 }
 
 .fehu-slide-in {
-  animation: fehu-slide-in 0.2s ease-out;
+  animation: fehu-slide-in var(--motion-ui) ease-out;
 }
 
 @keyframes fehu-slide-up {
@@ -75,7 +128,7 @@ body {
 }
 
 .fehu-slide-up {
-  animation: fehu-slide-up 0.25s ease-out;
+  animation: fehu-slide-up var(--motion-ui) ease-out;
 }
 
 @keyframes fehu-fade-in {
@@ -88,7 +141,7 @@ body {
 }
 
 .fehu-fade-in {
-  animation: fehu-fade-in 0.2s ease-out;
+  animation: fehu-fade-in var(--motion-ui) ease-out;
 }
 
 @keyframes fehu-drop-in {
@@ -101,5 +154,5 @@ body {
 }
 
 .fehu-drop-in {
-  animation: fehu-drop-in 0.25s ease-out;
+  animation: fehu-drop-in var(--motion-ui) ease-out;
 }

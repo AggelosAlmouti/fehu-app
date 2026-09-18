@@ -26,7 +26,7 @@ export function CurrencyPickerSheet({
           return (
             <li
               key={c.code}
-              className={i === currencies.length - 1 ? "" : "border-b border-border"}
+              className={i === currencies.length - 1 ? "" : "border-b-2 border-border"}
             >
               <button
                 type="button"
@@ -37,9 +37,9 @@ export function CurrencyPickerSheet({
                 aria-pressed={active}
                 className="flex w-full items-center justify-between gap-3 py-3 text-left"
               >
-                <span className="text-sm text-foreground">
+                <span className="text-base text-foreground">
                   {c.label}
-                  <span className="text-muted"> ({c.symbol})</span>
+                  <span className="text-caption"> ({c.symbol})</span>
                 </span>
                 {active && (
                   <Check className="size-4 shrink-0 text-accent" aria-hidden="true" />

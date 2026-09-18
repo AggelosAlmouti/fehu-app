@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { formatCurrency, type IncomeSource, type Transaction } from "@/lib/data";
+import { EmptyNote } from "@/components/empty-note";
 import { DeleteTransactionDialog } from "@/components/delete-transaction-dialog";
 import { Sheet } from "@/components/sheet";
 import { SheetHeader } from "@/components/sheet-header";
@@ -43,7 +44,7 @@ export function IncomeSourceDetailSheet({
       >
         <SheetHeader title={source.name} onClose={onClose} />
 
-        <div className="mb-4 text-right text-[11px] text-muted">
+        <div className="mb-4 text-right text-caption">
           {formatCurrency(earned, currency)} this month
         </div>
 
@@ -60,9 +61,7 @@ export function IncomeSourceDetailSheet({
             ))}
           </ul>
         ) : (
-          <p className="py-8 text-center text-sm text-muted">
-            No income this month.
-          </p>
+          <EmptyNote>No income this month.</EmptyNote>
         )}
       </Sheet>
 

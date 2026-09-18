@@ -17,7 +17,9 @@ import { AddTransactionSheet } from "@/components/add-transaction-sheet";
 import { BudgetDetailSheet } from "@/components/budget-detail-sheet";
 import { EmptyState } from "@/components/empty-state";
 import { IncomeSourceDetailSheet } from "@/components/income-source-detail-sheet";
+import { IconToggleGroup } from "@/components/icon-toggle-group";
 import { LoadingPill } from "@/components/loading-pill";
+import { Meter } from "@/components/meter";
 import { useAuth } from "@/lib/use-auth";
 import { useCurrency } from "@/lib/use-currency";
 import { useDemoAwareData } from "@/lib/use-demo-aware-data";
@@ -102,8 +104,8 @@ export function Dashboard() {
     <div className="mx-auto w-full max-w-xl px-5 pb-32 pt-6 md:pt-10">
       {(transactionsLoading || budgetsLoading || sourcesLoading) && <LoadingPill />}
 
-      <div className="mb-[18px] flex items-center justify-between">
-        <span className="text-sm text-detail">Welcome back!</span>
+      <div className="mb-4.5 flex items-center justify-between">
+        <span className="text-label">Welcome back!</span>
         <button
           type="button"
           onClick={openAddSheet}
@@ -114,63 +116,35 @@ export function Dashboard() {
         </button>
       </div>
 
-      <div className="mb-[22px] flex items-end justify-between">
-        <div>
-          <div className="mb-0.5 text-xs text-detail">Net</div>
-          <div
-            className={`text-[34px] font-medium leading-tight tracking-tight ${
-              net >= 0 ? "text-accent" : "text-danger"
-            }`}
-          >
-            {formatCurrency(net, currency)}
-          </div>
+      <div className="mb-5.5 grid grid-cols-[1fr_auto_auto] items-baseline gap-x-5 gap-y-0.5">
+        <div className="text-label">Net</div>
+        <div className="text-label">Spent</div>
+        <div className="text-label">Earned</div>
+        <div
+          className={`text-hero ${
+            net >= 0 ? "text-accent" : "text-danger"
+          }`}
+        >
+          {formatCurrency(net, currency)}
         </div>
-        <div className="flex items-end gap-5">
-          <div>
-            <div className="mb-0.5 text-[11px] text-muted">Spent</div>
-            <div className="text-[13px] text-foreground">
-              {formatCurrency(spent, currency)}
-            </div>
-          </div>
-          <div>
-            <div className="mb-0.5 text-[11px] text-muted">Earned</div>
-            <div className="text-[13px] font-medium text-accent">
-              {formatCurrency(earned, currency)}
-            </div>
-          </div>
+        <div className="text-base font-medium text-foreground">
+          {formatCurrency(spent, currency)}
+        </div>
+        <div className="text-base font-medium text-accent">
+          {formatCurrency(earned, currency)}
         </div>
       </div>
 
       <div className="mb-2.5 flex items-center justify-between">
-        <span className="text-xs text-detail">{currentMonthLabel()}</span>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setView("expense")}
-            aria-pressed={view === "expense"}
-            aria-label="Show budgets"
-            className={`flex size-6 items-center justify-center rounded-full transition-colors ${
-              view === "expense"
-                ? "bg-accent text-background"
-                : "text-detail hover:text-foreground"
-            }`}
-          >
-            <Wallet className="size-3.5" aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setView("income")}
-            aria-pressed={view === "income"}
-            aria-label="Show income sources"
-            className={`flex size-6 items-center justify-center rounded-full transition-colors ${
-              view === "income"
-                ? "bg-accent text-background"
-                : "text-detail hover:text-foreground"
-            }`}
-          >
-            <Coins className="size-3.5" aria-hidden="true" />
-          </button>
-        </div>
+        <span className="text-label">{currentMonthLabel()}</span>
+        <IconToggleGroup
+          value={view}
+          onChange={setView}
+          options={[
+            { value: "expense", icon: Wallet, label: "Show budgets" },
+            { value: "income", icon: Coins, label: "Show income sources" },
+          ]}
+        />
       </div>
 
       {view === "expense" ? (
@@ -188,12 +162,7 @@ export function Dashboard() {
         ) : budgetsLoading ? null : (
           <EmptyState icon={Wallet}>
             No budgets set yet. Add one from{" "}
-            <Link
-              href="/budgets"
-              className="mx-1 inline-block font-bold text-foreground transition-transform duration-150 hover:scale-110"
-            >
-              Budgets
-            </Link>{" "}
+            <BudgetsLink />{" "}
             to start tracking spending.
           </EmptyState>
         )
@@ -211,12 +180,7 @@ export function Dashboard() {
       ) : sourcesLoading ? null : (
         <EmptyState icon={Coins}>
           No income sources yet. Add one from{" "}
-          <Link
-            href="/budgets"
-            className="mx-1 inline-block font-bold text-foreground transition-transform duration-150 hover:scale-110"
-          >
-            Budgets
-          </Link>{" "}
+          <BudgetsLink />{" "}
           to start tracking income.
         </EmptyState>
       )}
@@ -225,7 +189,7 @@ export function Dashboard() {
         type="button"
         onClick={openAddSheet}
         aria-label="Add transaction"
-        className="fixed bottom-6 right-6 z-40 flex size-14 items-center justify-center rounded-full bg-accent text-background shadow-lg shadow-black/40 transition-transform active:scale-95 md:hidden"
+        className="fixed bottom-6 right-6 z-40 flex size-14 items-center justify-center rounded-full bg-accent text-background floating transition-transform active:scale-95 md:hidden"
       >
         <Plus className="size-6" aria-hidden="true" />
       </button>
@@ -267,6 +231,17 @@ export function Dashboard() {
   );
 }
 
+function BudgetsLink() {
+  return (
+    <Link
+      href="/budgets"
+      className="mx-1 inline-block font-medium text-foreground transition-transform duration-150 hover:scale-110"
+    >
+      Budgets
+    </Link>
+  );
+}
+
 function BudgetCard({
   budget,
   spent,
@@ -286,23 +261,16 @@ function BudgetCard({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-[10px] border-[0.5px] border-border px-3 py-3.5 text-left"
+      className="card-box px-3.5 py-3 text-left"
     >
-      <div className="mb-1.5 flex items-center justify-between">
-        <span className="text-[13px] text-foreground">{budget.name}</span>
-        <span className="text-[11px] text-muted">
+      <div className="mb-1.5 flex items-center justify-between gap-3">
+        <span className="min-w-0 truncate text-base text-foreground">{budget.name}</span>
+        <span className="shrink-0 text-caption">
           {formatCurrency(spent, currency)} /{" "}
           {formatCurrency(budget.amount, currency)}
         </span>
       </div>
-      <div className="h-[3px] overflow-hidden rounded-full bg-border">
-        <div
-          className={`h-full rounded-full transition-[width] duration-500 ${
-            overspent ? "bg-danger" : "bg-accent"
-          }`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+      <Meter percent={pct} tone={overspent ? "danger" : "accent"} />
     </button>
   );
 }
@@ -322,9 +290,9 @@ function IncomeSourceCard({
     <button
       type="button"
       onClick={onClick}
-      className="flex aspect-square flex-col justify-between rounded-[10px] border-[0.5px] border-border p-2 text-left"
+      className="flex aspect-square flex-col justify-between card-box p-2 text-left"
     >
-      <span className="truncate text-[13px] font-medium text-foreground">
+      <span className="truncate text-base font-medium text-foreground">
         {source.name}
       </span>
       <span className="truncate text-base font-medium text-accent">

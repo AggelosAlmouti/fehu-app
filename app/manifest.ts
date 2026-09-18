@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { BACKGROUND_COLOR } from "@/lib/theme";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -7,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Personal finance tracker",
     start_url: "/dashboard",
     display: "standalone",
-    background_color: "#141414",
-    theme_color: "#141414",
+    background_color: BACKGROUND_COLOR,
+    theme_color: BACKGROUND_COLOR,
     icons: [
       { src: "/icons/launchericon-48x48.png", sizes: "48x48", type: "image/png" },
       { src: "/icons/launchericon-72x72.png", sizes: "72x72", type: "image/png" },

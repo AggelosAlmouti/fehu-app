@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { InstallStatus } from "@/lib/use-install-prompt";
+import { Button } from "@/components/button";
 import { InstallInstructions } from "@/components/install-instructions";
 import { Sheet } from "@/components/sheet";
 import { SheetHeader } from "@/components/sheet-header";
@@ -68,31 +69,23 @@ export function InstallPromptDialog({
     >
       <SheetHeader title="Install Fehu" onClose={() => setOpen(false)} />
 
-      <p className="mb-4 text-sm text-muted">
+      <p className="mb-4 text-caption">
         Add Fehu to your home screen for one-tap access, even offline.
       </p>
 
       {status === "installable" ? (
-        <button
-          type="button"
-          onClick={handleInstall}
-          className="mb-4 w-full rounded-full bg-accent py-3 text-sm font-medium text-background transition-opacity hover:opacity-90"
-        >
+        <Button variant="solid" size="block" className="mb-4" onClick={handleInstall}>
           Install app
-        </button>
+        </Button>
       ) : status === "ios" || status === "other" ? (
         <div className="mb-4">
           <InstallInstructions status={status} />
         </div>
       ) : null}
 
-      <button
-        type="button"
-        onClick={handleDismissForever}
-        className="w-full text-center text-xs text-detail transition-colors hover:text-foreground"
-      >
+      <Button variant="link" size="block" onClick={handleDismissForever}>
         Don&apos;t show this again
-      </button>
+      </Button>
     </Sheet>
   );
 }
