@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "check:style": "node scripts/check-style.mjs"
+    "start": "next start"
   },
   "dependencies": {
     "firebase": "^12.17.1",

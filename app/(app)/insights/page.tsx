@@ -4,29 +4,28 @@ import { useMemo, useState } from "react";
 import { ChartLine, List, Wallet } from "lucide-react";
 import {
   budgetSpendingInPeriod,
-  endOfMonthISO,
+  currentMonthKey,
   formatCurrency,
   incomeBySourceInPeriod,
   monthlyTotals,
-  todayISO,
+  transactionsInRange,
   type MonthRange,
   type Transaction,
 } from "@/lib/data";
-import { AddTransactionSheet } from "@/components/add-transaction-sheet";
-import { BudgetDetailSheet } from "@/components/budget-detail-sheet";
-import { DeleteTransactionDialog } from "@/components/delete-transaction-dialog";
-import { EmptyNote } from "@/components/empty-note";
-import { EmptyState } from "@/components/empty-state";
-import { IconToggleGroup } from "@/components/icon-toggle-group";
-import { InsightsChart } from "@/components/insights-chart";
-import { LoadingPill } from "@/components/loading-pill";
-import { Meter } from "@/components/meter";
-import { MonthStepper } from "@/components/month-stepper";
-import { Pill } from "@/components/pill";
-import { TransactionRow } from "@/components/transaction-row";
 import { useAuth } from "@/lib/use-auth";
 import { useCurrency } from "@/lib/use-currency";
-import { useDemoAwareData } from "@/lib/use-demo-aware-data";
+import { useDemoAwareData } from "@/lib/demo-data";
+import { PageHeader } from "@/components/layout/app-shell";
+import { AddTransactionSheet } from "@/components/transactions/add-transaction-sheet";
+import { IconToggleGroup, Pill } from "@/components/ui/button";
+import { EmptyNote, EmptyState } from "@/components/ui/empty-state";
+import { Meter, MeterCard } from "@/components/ui/meter";
+import { MonthStepper } from "@/components/ui/month-stepper";
+import { LoadingPill } from "@/components/ui/notices";
+import { useEditSheet } from "@/components/ui/sheet";
+import { Stat } from "@/components/ui/stat";
+import { BudgetDetailSheet, TransactionList } from "@/components/transactions/transaction-list";
+import { InsightsChart } from "@/components/insights/insights-chart";
 
 type Period = "month" | "q1" | "q2" | "q3" | "q4" | "year" | "all";
 
@@ -40,11 +39,12 @@ const PERIODS: { label: string; value: Period }[] = [
   { label: "All", value: "all" },
 ];
 
-const QUARTER_START_MONTH: Record<"q1" | "q2" | "q3" | "q4", number> = {
-  q1: 1,
-  q2: 4,
-  q3: 7,
-  q4: 10,
+// First and last month of each calendar quarter.
+const QUARTER_MONTHS: Record<"q1" | "q2" | "q3" | "q4", [string, string]> = {
+  q1: ["01", "03"],
+  q2: ["04", "06"],
+  q3: ["07", "09"],
+  q4: ["10", "12"],
 };
 
 function periodToRange(period: Period, browsedMonth: string): MonthRange {
@@ -54,11 +54,8 @@ function periodToRange(period: Period, browsedMonth: string): MonthRange {
   const year = new Date().getFullYear();
   if (period === "year")
     return { startMonth: `${year}-01`, endMonth: `${year}-12` };
-  const startM = QUARTER_START_MONTH[period];
-  return {
-    startMonth: `${year}-${String(startM).padStart(2, "0")}`,
-    endMonth: `${year}-${String(startM + 2).padStart(2, "0")}`,
-  };
+  const [start, end] = QUARTER_MONTHS[period];
+  return { startMonth: `${year}-${start}`, endMonth: `${year}-${end}` };
 }
 
 export default function InsightsPage() {
@@ -77,13 +74,9 @@ export default function InsightsPage() {
 
   const [period, setPeriod] = useState<Period>("month");
   const [openBudgetId, setOpenBudgetId] = useState<string | null>(null);
-  const [editingTransaction, setEditingTransaction] =
-    useState<Transaction | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<Transaction | null>(null);
+  const editSheet = useEditSheet<Transaction>();
 
-  const [browsedMonth, setBrowsedMonth] = useState(() =>
-    todayISO().slice(0, 7),
-  );
+  const [browsedMonth, setBrowsedMonth] = useState(currentMonthKey);
   const [historyView, setHistoryView] = useState<"budget" | "date">("budget");
   const range = useMemo(
     () => periodToRange(period, browsedMonth),
@@ -94,14 +87,8 @@ export default function InsightsPage() {
     () => monthlyTotals(transactions, range),
     [transactions, range],
   );
-  const periodSpent = useMemo(
-    () => points.reduce((s, p) => s + p.spent, 0),
-    [points],
-  );
-  const periodEarned = useMemo(
-    () => points.reduce((s, p) => s + p.earned, 0),
-    [points],
-  );
+  const periodSpent = points.reduce((sum, p) => sum + p.spent, 0);
+  const periodEarned = points.reduce((sum, p) => sum + p.earned, 0);
 
   const spending = useMemo(
     () => budgetSpendingInPeriod(budgets, transactions, range),
@@ -123,14 +110,16 @@ export default function InsightsPage() {
   );
   const maxEarned = Math.max(1, ...rankedIncome.map((s) => s.earned));
 
-  const monthTransactions = useMemo(() => {
-    if (period !== "month") return [];
-    const startISO = `${browsedMonth}-01`;
-    const endISO = endOfMonthISO(browsedMonth);
-    return transactions
-      .filter((t) => t.date >= startISO && t.date <= endISO)
-      .sort((a, b) => b.date.localeCompare(a.date));
-  }, [transactions, period, browsedMonth]);
+  const monthTransactions = useMemo(
+    () =>
+      period === "month"
+        ? transactionsInRange(transactions, {
+            startMonth: browsedMonth,
+            endMonth: browsedMonth,
+          })
+        : [],
+    [transactions, period, browsedMonth],
+  );
 
   const openBudget = budgets.find((b) => b.id === openBudgetId) ?? null;
   const openBudgetTransactions = useMemo(
@@ -140,12 +129,10 @@ export default function InsightsPage() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-xl px-5 pb-32 pt-6 md:pt-10">
+    <>
       {loading && <LoadingPill />}
 
-      <h1 className="mb-8 text-hero md:mb-10">
-        Insights
-      </h1>
+      <PageHeader title="Insights" />
 
       {loading ? null : transactions.length === 0 ? (
         <EmptyState icon={ChartLine}>
@@ -166,18 +153,10 @@ export default function InsightsPage() {
           </div>
 
           <div className="mb-5 flex flex-wrap items-end gap-x-6 gap-y-3">
-            <div>
-              <div className="mb-0.5 text-label">Spent</div>
-              <div className="text-hero text-foreground">
-                {formatCurrency(periodSpent, currency)}
-              </div>
-            </div>
-            <div>
-              <div className="mb-0.5 text-label">Earned</div>
-              <div className="text-hero text-accent">
-                {formatCurrency(periodEarned, currency)}
-              </div>
-            </div>
+            <Stat label="Spent">{formatCurrency(periodSpent, currency)}</Stat>
+            <Stat label="Earned" tone="gain">
+              {formatCurrency(periodEarned, currency)}
+            </Stat>
           </div>
 
           <div className="card-box p-4">
@@ -186,7 +165,7 @@ export default function InsightsPage() {
 
           <div className="mt-8">
             {period === "month" && (
-              <div className="mb-3 flex items-center justify-between rounded-full border-2 border-border-strong bg-card px-2 py-1">
+              <div className="mb-3 flex items-center justify-between rounded-full border-2 border-border-strong px-2 py-1">
                 <div className="flex items-center gap-1">
                   <MonthStepper
                     month={browsedMonth}
@@ -205,40 +184,27 @@ export default function InsightsPage() {
             )}
 
             {period === "month" && historyView === "date" ? (
-              monthTransactions.length > 0 ? (
-                <ul className="flex flex-col">
-                  {monthTransactions.map((t, i) => (
-                    <TransactionRow
-                      key={t.id}
-                      transaction={t}
-                      isLast={i === monthTransactions.length - 1}
-                      onEdit={() => setEditingTransaction(t)}
-                      onDelete={() => setPendingDelete(t)}
-                    />
-                  ))}
-                </ul>
-              ) : (
-                <EmptyNote>No transactions this month.</EmptyNote>
-              )
+              <TransactionList
+                transactions={monthTransactions}
+                emptyText="No transactions this month."
+                onEdit={editSheet.openEdit}
+                onDelete={deleteTransaction}
+              />
             ) : rankedBudgets.length > 0 ? (
               <div className="flex flex-col gap-2">
                 {rankedBudgets.map(({ budget, spent }) => (
-                  <button
+                  <MeterCard
                     key={budget.id}
-                    type="button"
-                    onClick={() => setOpenBudgetId(budget.id)}
-                    className="card-box px-3.5 py-3 text-left"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="min-w-0 truncate text-base text-foreground">
-                        {budget.name}
-                      </span>
-                      <span className="shrink-0 text-base font-medium text-foreground">
+                    name={budget.name}
+                    value={
+                      <span className="text-strong text-foreground">
                         {formatCurrency(spent, currency)}
                       </span>
-                    </div>
-                    <Meter className="mt-2" percent={(spent / maxSpent) * 100} />
-                  </button>
+                    }
+                    onClick={() => setOpenBudgetId(budget.id)}
+                  >
+                    <Meter percent={(spent / maxSpent) * 100} />
+                  </MeterCard>
                 ))}
               </div>
             ) : (
@@ -252,20 +218,17 @@ export default function InsightsPage() {
                 <div className="mb-3 text-label">Income</div>
                 <div className="flex flex-col gap-2">
                   {rankedIncome.map(({ source, earned }) => (
-                    <div
+                    <MeterCard
                       key={source.id}
-                      className="card-box px-3.5 py-3"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="min-w-0 truncate text-base text-foreground">
-                          {source.name}
-                        </span>
-                        <span className="shrink-0 text-base font-medium text-accent">
+                      name={source.name}
+                      value={
+                        <span className="text-strong text-accent">
                           {formatCurrency(earned, currency)}
                         </span>
-                      </div>
-                      <Meter className="mt-2" percent={(earned / maxEarned) * 100} />
-                    </div>
+                      }
+                    >
+                      <Meter percent={(earned / maxEarned) * 100} />
+                    </MeterCard>
                   ))}
                 </div>
               </div>
@@ -275,30 +238,21 @@ export default function InsightsPage() {
 
       <BudgetDetailSheet
         budget={openBudget}
+        singleMonth={period === "month"}
         transactions={openBudgetTransactions}
         onClose={() => setOpenBudgetId(null)}
-        onEdit={(t) => setEditingTransaction(t)}
+        onEdit={editSheet.openEdit}
         onDelete={deleteTransaction}
       />
 
       <AddTransactionSheet
-        open={editingTransaction !== null}
-        editing={editingTransaction}
+        open={editSheet.open}
+        editing={editSheet.editing}
         budgets={budgets}
         sources={sources}
-        onClose={() => setEditingTransaction(null)}
-        onAdd={() => {}}
+        onClose={editSheet.close}
         onUpdate={updateTransaction}
       />
-
-      <DeleteTransactionDialog
-        transaction={pendingDelete}
-        onCancel={() => setPendingDelete(null)}
-        onConfirm={() => {
-          if (pendingDelete) deleteTransaction(pendingDelete.id);
-          setPendingDelete(null);
-        }}
-      />
-    </div>
+    </>
   );
 }

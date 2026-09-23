@@ -1,18 +1,44 @@
-const CACHE_NAME = "fehu-cache-v2";
+const CACHE_NAME = "fehu-cache-v3";
 
-// Every real route in the app (mirrors lib/nav.ts's hrefs, plus the public
-// marketing page) — precached at install so the very first
-// service-worker-controlled load of any of them is already a full cache
-// hit, rather than depending on a prior visit having happened to run
-// through the fetch handler below for that specific route (a page's own
-// first-ever load is never itself controlled by the service worker
-// installing during that same load).
+// Every real route in the app (the nav items in components/layout/app-shell.tsx,
+// plus the public marketing page) — precached at install so the very first
+// service-worker-controlled load of any of them is already a full cache hit.
 const PRECACHE_ROUTES = ["/", "/dashboard", "/budgets", "/insights", "/settings"];
 
 // Next.js content-hashes this path's filenames — the response for a given
 // URL can never change, so a cache hit never needs a background refetch.
 function isImmutableAsset(url) {
   return url.pathname.startsWith("/_next/static/");
+}
+
+// Stores a page only once every asset its HTML references is cached too, so a
+// cached page can never point at scripts that would have to come from the
+// network (see CLAUDE.md). The regex stops at backslashes because the inline
+// RSC payload repeats each URL inside escaped quotes.
+async function cachePage(cache, key, response) {
+  const html = await response.clone().text();
+  const assetUrls = new Set(
+    [...html.matchAll(/\/_next\/static\/[^"'\s\\]+/g)].map((m) => m[0]),
+  );
+  const results = await Promise.all(
+    [...assetUrls].map(async (assetUrl) => {
+      if (await cache.match(assetUrl)) return true;
+      try {
+        const assetResponse = await fetch(assetUrl);
+        if (assetResponse.ok) await cache.put(assetUrl, assetResponse);
+        // An HTTP error means the asset doesn't exist — nothing to wait for.
+        return true;
+      } catch {
+        return false;
+      }
+    }),
+  );
+  if (results.every(Boolean)) await cache.put(key, response);
+}
+
+async function store(cache, key, response, isPage) {
+  if (isPage) await cachePage(cache, key, response);
+  else await cache.put(key, response);
 }
 
 self.addEventListener("install", (event) => {
@@ -22,22 +48,7 @@ self.addEventListener("install", (event) => {
       await Promise.allSettled(
         PRECACHE_ROUTES.map(async (route) => {
           const response = await fetch(route);
-          if (!response.ok) return;
-          await cache.put(route, response.clone());
-
-          // Pull the hashed asset URLs this route's HTML actually references
-          // so they're cached too, not just the document itself. Routes
-          // share most of their chunks, so this naturally dedupes across
-          // the precache list via the cache.match check below.
-          const html = await response.text();
-          const assetUrls = [...html.matchAll(/\/_next\/static\/[^"'\s]+/g)].map((m) => m[0]);
-          await Promise.allSettled(
-            assetUrls.map(async (assetUrl) => {
-              if (await cache.match(assetUrl)) return;
-              const assetResponse = await fetch(assetUrl);
-              if (assetResponse.ok) await cache.put(assetUrl, assetResponse);
-            }),
-          );
+          if (response.ok) await cachePage(cache, route, response);
         }),
       );
     })(),
@@ -68,33 +79,40 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  event.respondWith(
-    (async () => {
-      const cache = await caches.open(CACHE_NAME);
-      const cached = await cache.match(event.request);
+  // Pages are keyed by path alone — query params like ?add=1 are read
+  // client-side, so they all share the one cached page.
+  const isPage = event.request.mode === "navigate";
+  const key = isPage ? url.pathname : event.request;
 
-      if (cached) {
-        // Cache-first, refresh in the background (see CLAUDE.md) — except
-        // for immutable assets, which can never go stale, so there's
-        // nothing to refresh and no reason to spend bandwidth on one.
-        if (!isImmutableAsset(url)) {
-          // Only cache successful responses — fetch() resolves (doesn't
-          // reject) on HTTP errors like 404/500, so without this check we'd
-          // cache error pages and serve them later while offline.
-          fetch(event.request)
-            .then((response) => {
-              if (response.ok) cache.put(event.request, response.clone());
-            })
-            .catch(() => {});
-        }
-        return cached;
+  // Background work is collected here and handed to waitUntil synchronously
+  // below — calling waitUntil later, after an await, isn't reliable everywhere.
+  let background = Promise.resolve();
+
+  const responsePromise = (async () => {
+    const cache = await caches.open(CACHE_NAME);
+    const cached = await cache.match(key);
+
+    if (cached) {
+      // Cache-first, refresh in the background (see CLAUDE.md) — except
+      // immutable assets, which can never go stale.
+      if (!isImmutableAsset(url)) {
+        background = fetch(event.request)
+          .then((response) => {
+            // fetch() resolves on HTTP errors too — never cache those.
+            if (response.ok) return store(cache, key, response, isPage);
+          })
+          .catch(() => {});
       }
+      return cached;
+    }
 
-      // Nothing cached — the precache list above is meant to make this
-      // the rare case rather than something routinely relied on.
-      const response = await fetch(event.request);
-      if (response.ok) cache.put(event.request, response.clone());
-      return response;
-    })(),
-  );
+    const response = await fetch(event.request);
+    if (response.ok) {
+      background = store(cache, key, response.clone(), isPage).catch(() => {});
+    }
+    return response;
+  })();
+
+  event.respondWith(responsePromise);
+  event.waitUntil(responsePromise.then(() => background, () => {}));
 });

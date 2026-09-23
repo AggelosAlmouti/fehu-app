@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -16,10 +17,9 @@ import {
   GoogleAuthProvider,
   type User,
 } from "firebase/auth";
-import { collection, getDocs, writeBatch } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
-import { seedDefaultBudgets } from "@/lib/use-budgets";
-import { seedDefaultIncomeSources } from "@/lib/use-income-sources";
+import { auth } from "@/lib/firebase";
+import { deleteAllUserData, seedNewUser } from "@/lib/firestore";
+import { readStorage, writeStorage } from "@/lib/storage";
 
 // Firebase Auth's session-restore has an unbounded network round-trip
 // before the first onAuthStateChanged fires (see CLAUDE.md's Auth model).
@@ -30,25 +30,10 @@ const OPTIMISTIC_USER_KEY = "fehu-last-user";
 
 function readOptimisticUser(): OptimisticUser | null {
   try {
-    const raw = localStorage.getItem(OPTIMISTIC_USER_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(readStorage(OPTIMISTIC_USER_KEY) ?? "null");
     return typeof parsed?.uid === "string" ? parsed : null;
   } catch {
     return null;
-  }
-}
-
-function writeOptimisticUser(user: OptimisticUser | null) {
-  try {
-    if (user) {
-      localStorage.setItem(OPTIMISTIC_USER_KEY, JSON.stringify(user));
-    } else {
-      localStorage.removeItem(OPTIMISTIC_USER_KEY);
-    }
-  } catch {
-    // Best-effort — a private/restricted context just means no optimistic
-    // render next time, not a functional problem now.
   }
 }
 
@@ -81,26 +66,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
-      writeOptimisticUser(
+      if (!firebaseUser) setOptimisticUser(null);
+      writeStorage(
+        OPTIMISTIC_USER_KEY,
         firebaseUser
-          ? { uid: firebaseUser.uid, email: firebaseUser.email }
+          ? JSON.stringify({ uid: firebaseUser.uid, email: firebaseUser.email })
           : null,
       );
     });
   }, []);
 
-  async function signInWithGoogleCredential(idToken: string) {
+  // Stable identity — the sign-in gate re-initializes Google's button whenever it changes.
+  const signInWithGoogleCredential = useCallback(async (idToken: string) => {
     const credential = GoogleAuthProvider.credential(idToken);
     const result = await signInWithCredential(auth, credential);
     setUser(result.user);
     // isNewUser, not creationTime === lastSignInTime — see CLAUDE.md.
     if (getAdditionalUserInfo(result)?.isNewUser) {
-      await Promise.all([
-        seedDefaultBudgets(result.user.uid),
-        seedDefaultIncomeSources(result.user.uid),
-      ]);
+      await seedNewUser(result.user.uid);
     }
-  }
+  }, []);
 
   async function logOut() {
     await signOut(auth);
@@ -110,19 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Throw (not silently return) so DeleteAccountDialog's catch can
     // surface an error — reachable now during the optimistic-render window.
     if (!auth.currentUser) throw new Error("Not signed in yet");
-    // Must delete Firestore data while still authenticated.
-    const uid = auth.currentUser.uid;
-    const [transactionsSnapshot, budgetsSnapshot, incomeSourcesSnapshot] =
-      await Promise.all([
-        getDocs(collection(db, "users", uid, "transactions")),
-        getDocs(collection(db, "users", uid, "budgets")),
-        getDocs(collection(db, "users", uid, "incomeSources")),
-      ]);
-    const batch = writeBatch(db);
-    transactionsSnapshot.forEach((doc) => batch.delete(doc.ref));
-    budgetsSnapshot.forEach((doc) => batch.delete(doc.ref));
-    incomeSourcesSnapshot.forEach((doc) => batch.delete(doc.ref));
-    await batch.commit();
+    await deleteAllUserData(auth.currentUser.uid);
     await deleteUser(auth.currentUser);
   }
 

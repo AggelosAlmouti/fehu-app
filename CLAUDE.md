@@ -4,160 +4,133 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-- `npm run dev` — start the dev server
-- `npm run build` — production build
-- `npm run start` — run a production build
+- `npm run dev` — dev server · `npm run build` — production build · `npm run start` — run the production build
 
-There is no linter or test suite configured in this repo — ESLint was deliberately removed (TypeScript's own diagnostics already cover unused-variable checks; the rest of the overlap wasn't worth keeping for this project). The one exception is `npm run check:style`, a small grep-level guard for the design-system rules in Styling below — run it after any UI change; it exits non-zero and lists file:line for each violation.
+No linter or test suite — ESLint was deliberately removed (TypeScript covers unused-variable checks), and a grep-based style-guard script was removed on request; don't re-add either.
 
 ## Architecture
 
-Fehu is a personal finance tracker PWA: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, Firebase (Firestore + Auth).
+Fehu is a personal finance tracker PWA: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, Firebase (Firestore + Auth). `@/*` maps to the repo root.
 
-### Routing
+### Routing and shell
 
-Two route groups under `app/`: `(marketing)` (public) and `(app)` (authenticated, behind `AppShell`) — route groups don't add a URL segment. `/` is the marketing page; `/dashboard`, `/budgets`, `/insights`, `/settings` are the real app. No Categories page/nav item — budgets themselves are the categorization (see Data layer).
+Route groups: `(marketing)` — the public landing page at `/` — and `(app)` — `/dashboard`, `/budgets`, `/insights`, `/settings`, behind `AppShell`. No Categories page: budgets are the categorization. Root `app/layout.tsx` wraps everything in `AuthProvider`; `app/(app)/layout.tsx` adds `CurrencyProvider`, `InstallProvider` and `AppShell` (`components/layout/app-shell.tsx` — desktop sidebar / mobile drawer, the sign-in gate, the page container, `PageHeader`, and the nav items).
 
-Root `app/layout.tsx` wraps everything in `AuthProvider` only. `app/(app)/layout.tsx` layers `CurrencyProvider` then `AppShell` (`components/app-shell.tsx` — desktop sidebar / mobile burger-drawer) on top, scoped to just the authenticated routes; nav items come from `lib/nav.ts`.
+Nav links use history-*replacing* navigation — push navigation let iOS's edge-swipe-back gesture flip between tabs mid-navigation (real bug).
 
-`Wordmark` (`components/wordmark.tsx`) draws the "F" from a cropped image asset, not a font glyph — no Unicode rune matched the actual app icon's letterform closely enough. Hidden on the mobile top bar; only shown in the drawer/sidebar.
+`Wordmark` draws the "F" from a cropped image, since no font glyph matched the app icon. Shown only in the sidebar/drawer and sign-in gate, not the mobile top bar.
 
-Nav links use history-*replacing* navigation, not the default push — sibling tabs shouldn't build browser back/forward history the way drill-down pages do. Fixed a real iOS bug where the extra history entries let the edge-swipe-back gesture flip between tabs mid-navigation.
+The landing page is one self-contained file (hero, curated features, one-open-at-a-time FAQ). It has exactly one CTA, to `/dashboard`, and makes no install decisions — install prompting happens after sign-in.
 
-### Marketing page (`app/(marketing)/page.tsx`)
+### Install and PWA
 
-Public single-page landing at `/`, no auth gate. Everything (hero, features, FAQ) lives in one file, not split into separate components — none of the three sections are reused elsewhere (compare `sheet.tsx`/`empty-state.tsx`, which earn their own files by being shared). Features is a curated subset of what the app actually does, not the full list. FAQ is a from-scratch accordion, one item open at a time.
+- **`lib/use-install-prompt.tsx`** — a Context mounted once in the `(app)` layout, because Chromium's install-prompt event fires once per page load and a second instance mounted later would miss it. Detects: installed/standalone, installable (Chromium), iOS/Safari (careful matching — iPadOS reports as a desktop Mac), or other browsers (deliberately lumped together). Chromium stops firing the event once installed, so a stored "installed" flag remembers past installs. A dev-only `?install=<state>` forces any state.
+- **Install dialog** (`components/layout/install-prompt.tsx`) — mounted only on `/dashboard`. It moved there from the sign-in gate on direct feedback: testers, iPhone users especially, skipped it at the gate. It opens every time the dashboard mounts, including each return from another tab — a deliberate nudge — until "don't show again", which shows a toast pointing to Settings. Settings also offers install. Its iOS instructions are a confirmed-safe exception to the rule that iOS instructions appear only on `/dashboard`, because iOS "Add to Home Screen" can bookmark the current URL.
+- **Manifest** (`app/manifest.ts`) — `start_url` is `/dashboard`. Its `<link>` is global by Next's convention. Scoping it to app routes was tried and reverted: Chrome resolves the install target correctly from any page. `app/layout.tsx` sets a separate iOS home-screen icon, since iOS doesn't reliably read manifest icons. **Manifest changes don't reach already-installed icons** — the fix for a stale install is remove-and-reinstall, not a routing bug.
+- **`public/service-worker.js`** (production only; registered from the root layout so the install event can fire pre-auth):
+  - **Cache-first** — network-first hung on slow-but-connected networks, since a slow fetch doesn't reject.
+  - Precaches every route at install.
+  - **A page is only cached together with every asset its HTML references**, both at install and in the background refresh. The browser reinstalls the worker only when this file changes, so after a deploy the refresh used to swap in HTML whose new chunks were never fetched, and the next slow launch hung (real regression). An asset HTTP error counts as done; a network failure keeps the old page.
+  - Asset URLs are scraped with a pattern that stops at backslashes — the inline RSC payload repeats them inside escaped quotes.
+  - Pages are keyed by path only, so query params share one entry.
+  - **A worker registered by a localhost production build keeps serving that snapshot to the dev server until unregistered** — not a code bug.
 
-Makes no install decisions of its own — one CTA, always to `/dashboard`. Install prompting happens after sign-in instead (see Auth model); an earlier version showed a second install button here, simplified away to keep this page free of async, detection-driven UI.
+### Auth (`lib/use-auth.tsx`)
 
-`lib/use-install-prompt.ts` detects whether the app is already installed/running standalone, installable right now (Chromium, via the browser's own install-prompt event), or needs manual instructions — split further into iOS/Safari (matched carefully, since iPadOS reports itself as a desktop Mac) versus every other browser (collapsed together deliberately; only Chrome and Safari get dedicated treatment). A dev-only query-param override forces any state for testing, without the matching device/browser.
+Auth is a Context, since shared state avoids racing listeners.
 
-The web manifest's install target (`app/manifest.ts`) points at `/dashboard`, not `/` — an installed icon should open the app, not the marketing pitch. Its `<link>` tag is global (injected on every page by Next's standard manifest convention) rather than scoped to just the authenticated routes — a hand-rolled route handler was tried specifically to scope it, then reverted once it was clear the thing it prevented (Chrome's own install icon appearing on `/`) was never actually a correctness bug, since Chrome always resolves the manifest's install target correctly regardless of which page triggered install. The one real risk — iOS's manual "Add to Home Screen," which can bookmark whatever URL is currently loaded instead of the manifest's target — is handled separately, by never showing iOS install instructions anywhere except `/dashboard` (see Auth model).
+Sign-in is Google-only via **Google Identity Services** (`renderButton`). Firebase's popup sign-in (hangs on mobile) and redirect sign-in (silently returned nothing, never root-caused) were both dropped for real bugs. GIS One Tap is avoided because FedCM can be silently suppressed. The gate also checks on mount whether the GIS script already loaded — its load callback fires once per session, and a remounted gate used to lose the button (real bug).
 
-**Manifest changes don't retroactively apply to an already-installed icon** — the OS snapshots the manifest at install time, and neither iOS nor Android re-checks it promptly. A stale install's fix is always remove-and-reinstall, not a routing bug to chase.
+Slow-connection fixes — don't undo:
+- `lib/firebase.ts` initializes Auth without the popup/redirect resolver, which loaded an extra script on mobile/Safari. It falls back to `getAuth` on dev hot-reload.
+- Session restore makes an unbounded network call before the first auth callback. So the last confirmed identity is mirrored to local storage, read **after mount** (reading it during render caused a hydration mismatch), and the shell renders optimistically off it. Signing out clears it from both storage and memory. This fixed the shell, not data loading (see Data layer).
 
-`components/service-worker-registration.tsx` is mounted in the root layout, not `AppShell`, so the install-prompt event can fire even on this pre-auth page (Chromium won't fire it at all without an active service worker).
+New accounts get default budgets and a "Salary" source, gated on the SDK's `isNewUser`. **Never gate on creationTime === lastSignInTime** — with this sign-in method the timestamps can match on repeat logins, which re-seeded data on every login (confirmed bug). Wiping Firestore data alone won't re-trigger seeding.
 
-### Auth model (`lib/use-auth.tsx`)
+Account deletion wipes every collection plus the preferences doc while still authenticated, then deletes the Auth user. It throws when there's no confirmed session yet (possible during optimistic render); the delete-account dialog shows the error with a log-out button.
 
-Auth state is a React Context (`AuthProvider`/`useAuth`), not a plain hook — more than one component needs the same live state, and independent listeners per hook call would risk racing into separate sessions.
-
-**⚠️ Confirmed working on desktop; not yet re-confirmed on mobile since the Google Identity Services switch below** — worth testing before trusting this area is fully settled.
-
-Sign-in is mandatory, Google-only, via **Google Identity Services (GIS)** — Google's own client library — rather than Firebase's own popup/redirect sign-in, both tried first and dropped for real bugs: popup, because mobile browsers generally don't support true popup windows, breaking Firebase's "is it still open" detection and hanging forever if closed early; redirect, because it silently resolved with nothing — reproduced locally and on the deployed domain, desktop and mobile, even a clean browser profile (never fully root-caused). GIS's own popup flow sidesteps this whole class of problem. Deliberately not using GIS's "One Tap" flow either — it depends on a browser mechanism (FedCM) that Chrome can silently suppress after a few dismissals, with no reliable way to detect that it happened.
-
-`lib/firebase.ts` initializes Auth without its default popup/redirect resolver — that resolver proactively loads an extra script on mobile/Safari regardless of whether popup/redirect sign-in is ever used, and was a confirmed contributor to slow-connection hangs. Falls back to the default initialization in dev hot-reload, since Auth can't be initialized twice for the same app.
-
-A second slow-connection hang, found the same way: restoring an already-signed-in session makes its own network call before the first auth-state callback fires, with no way to bound or skip it. Fixed with an optimistic-render layer — the last confirmed signed-in identity is mirrored to local storage and read back after mount (deliberately *not* read synchronously during render — that caused a real hydration mismatch, since the server has no local storage to read). The app renders the real shell optimistically off that remembered identity while the network call is still in flight, only falling back to the sign-in gate once Auth actually reports nobody's signed in. **This only fixed the shell, not the data itself** — see the data-layer note below on why Firestore reads still can't start any earlier this way.
-
-A real, now-fixed bug: navigating away from the sign-in gate and back used to leave the Google button permanently missing, because the script-load callback that renders it only ever fires once per browser session, while the shell component remounts across that navigation. Fixed by also checking whether the script already loaded on mount, rather than relying solely on that callback firing again.
-
-The sign-in gate is now just the Google button — no install control, no divider, no marketing copy. **Install prompting moved to a post-login dialog on direct feedback that the old gate placement wasn't working** — real test demos showed people, iPhone users especially, kept skipping the install step there; a passive option next to a sign-in button is easy to not register as worth doing before you're even in the app. `components/install-prompt-dialog.tsx` is mounted in the signed-in half of `AppShell`, restricted to the dashboard route only (iOS install instructions must never appear anywhere else — see Marketing page). Opens itself shortly after mount whenever install is actually possible and it hasn't been permanently dismissed — a normal close just defers it to the next signed-in visit; only its own explicit "don't show again" sets a permanent flag, which then surfaces a brief toast (`components/toast.tsx`, styled like `loading-pill.tsx`) pointing at Settings as the alternate way in.
-
-Install is also offered from Settings, for anyone who wants it later without waiting for the dashboard. Its iOS instructions are a deliberate, **confirmed** exception to the dashboard-only rule — reaching that row is always a deliberate tap, and an icon installed from there does correctly launch into the app, not into Settings itself.
-
-Account deletion wipes all of the user's Firestore data (batched, while still authenticated) before removing the Auth account itself. It throws if there's no confirmed Firebase session yet — reachable during the optimistic-render window above; `delete-account-dialog.tsx` surfaces that failure with a log-out button right there, rather than requiring a trip to the nav's own logout control.
-
-Firestore security rules (managed in the Firebase console, **not** tracked in this repo) restrict each user's data by their own uid. Keep these in sync by hand whenever a new top-level collection is added — nothing in this repo enforces or even documents drift here automatically.
+Firestore security rules live in the Firebase console, **not** this repo: one explicit rule per collection under `users/{uid}/` (transactions, budgets, incomeSources, settings), owner-only. A catch-all recursive rule was rejected — it would let a tampering client create arbitrary collections. **Add a rule by hand for every new collection.**
 
 ### Data layer
 
-No fixed category list — budgets themselves are the categorization; an expense optionally references one. Replaced an old hard-coded category enum.
+- Expenses optionally reference a **budget**; income optionally references an **income source**, which is a name only. There's no fixed category list.
+- **`lib/firestore.ts`** — the one data-access module: a generic realtime subscription wrapped by `useTransactions`/`useBudgets`/`useIncomeSources`, plus path helpers, seeding and the account wipe. Adding a collection means updating the subscription, the wipe list, and the console rules.
+  - Editing a transaction's type strips the other type's link field.
+  - Deleting a budget or source unlinks its transactions (a real bug shipped without this).
+  - Multi-document writes go through a helper that splits them into batches of 500, Firestore's limit — account deletion used to fail past roughly a year of transactions. The batches commit in parallel, so offline writes still apply at once.
+  - Transactions are read unordered; consumers sort.
+- **Loading pill**:
+  - **A one-time cache-only read was tried for slow data — don't re-attempt.** Firestore queues every operation behind Auth's first callback, so it isn't faster. Mirroring data to local storage was rejected: history is unbounded, and a trial for budgets was reverted because stale cached budgets caused dangling references and silently failing edits.
+  - The pill re-appears when connectivity returns, but only if Firestore had fallen back to cache. It clears on the server-confirmed snapshot. **The subscription must include metadata changes** — without them, reconnecting with no data changes sent no snapshot and the pill stuck forever (real bug). Metadata-only snapshots don't rebuild the list.
+- **`lib/data.ts`** — types, the currency list and formatting, and shared rule helpers (month keys, "is budget active", name uniqueness, sums):
+  - Big sums abbreviate (M/B/T), then show a dash rather than a wrong number.
+  - Relative dates only say today/yesterday/tomorrow, otherwise a literal date.
+  - Totals come in a cadence-aware Dashboard version and a period-scoped Insights version, **kept deliberately separate**.
+- **Currency** — a curated list plus "Other", with hand-picked symbols prepended manually, never `Intl` currency formatting (its glyphs are inconsistent). The list lives in `data.ts` so pure helpers never import Firebase. `lib/use-currency.tsx` is a Context read directly by every money-formatting component. The picker is a bottom sheet — a native select can't be dark-styled and triggers iOS zoom.
+- `lib/storage.ts` — non-throwing localStorage. `lib/demo-data.ts` — dev-only `?demo=1` on Dashboard/Insights swaps in a generated year (current month forced negative); edits are no-ops, and you still sign in normally.
+- Dates are built from local year/month/day, never UTC conversion — that shifted dates near midnight (real bug). The date picker slices the month from the ISO string for the same reason.
 
-Income is categorized the same way, via a simpler parallel entity — a named source with no amount or cadence, since a source isn't a cap to compare against, just a label. An income transaction optionally references one.
+### Components
 
-- `lib/firebase.ts` — Firebase app/auth/Firestore init. Firestore uses local persistent caching for offline read/write.
-- `app/manifest.ts` — the web manifest. `app/layout.tsx` separately points at a specific icon for iOS's home-screen icon, since iOS Safari doesn't reliably read the manifest's own icons the way Chrome/Android does.
-- `public/service-worker.js` — app-shell offline support (separate from Firestore's own offline cache above). **Cache-first**, not network-first — network-first was a real bug on a slow-but-connected network, since a slow fetch doesn't reject the way an offline one does, so the app hung instead of falling back to the already-available cache. Precaches every route up front at install time, so a page's first-ever service-worker-controlled load doesn't depend on an earlier visit having incidentally warmed the cache. Production builds only. **Once registered it outlives the build that registered it** — running a production build against localhost even once leaves a stale worker serving that snapshot to the dev server on the same origin afterward, indefinitely, until manually unregistered. Not a code bug if this happens.
-- `lib/use-transactions.ts` / `lib/use-budgets.ts` / `lib/use-income-sources.ts` — realtime Firestore CRUD hooks, one per collection. Editing a transaction's type strips the *other* type's now-invalid linking field. Deleting a budget or income source sweeps matching transactions in the same batch to strip the now-dangling reference — a real bug shipped once without this (the transactions stayed valid as standalone records, just permanently pointing at a deleted doc).
-- **A one-time cache-only read was tried as a fix for slow-to-appear data — don't re-attempt.** The Firestore client funnels every operation, cache-only reads included, through one internal queue that doesn't start processing until Firebase Auth's own listener has fired once — so a parallel cache read isn't actually independent of network speed here, confirmed by direct timing. The real fix — mirroring data into local storage the way identity is mirrored above — was identified but not implemented for transactions (history is unbounded, can't be mirrored wholesale) and was tried-and-reverted separately for budgets specifically (a stale cached budget could get silently deleted or edited elsewhere, producing dangling references or silently-failing edits with no error surfaced anywhere in this app). Both hooks expose a loading flag instead, shown as a small pill on the pages that need it, re-entered when connectivity drops and returns.
-- `lib/data.ts` — shared types plus formatting helpers. Large sums abbreviate past a threshold rather than printing every digit, and print a plain dash rather than a wrong number once they're too large even for that. Relative date labels only cover today/yesterday/tomorrow — anything further falls to a literal date, since a reader has to do the subtraction themselves for "N days ago" to mean anything, which defeats the point. Also has the grouping helpers behind budget/income totals, both a cadence-aware version (Dashboard) and a period-scoped version (Insights) that are deliberately kept separate rather than unified — the period-vs-cadence distinction is the point.
+**Every component lives under `components/`, in subfolders — never loose at the top level:**
+- `ui/` — generic building blocks with no domain knowledge.
+- `layout/` — the app frame and what it mounts.
+- One folder per feature, named after its page: `transactions/`, `budgets/`, `insights/`, `settings/`.
 
-### Currency (`lib/currencies.ts`, `lib/use-currency.tsx`)
+Route folders hold only `page.tsx`/`layout.tsx`; tiny single-use helpers stay inline in their page. Families of small components share one module (e.g. every pressable control is in `ui/button.tsx`) — check for an existing module before adding a file.
 
-A short, deliberately curated list of major currencies plus a generic "other" option, each with a hand-picked symbol rather than delegating to `Intl`'s own currency data — that data doesn't have a clean glyph for every currency. Amounts are always formatted as a plain number with that symbol prepended manually, never through `Intl`'s currency-formatting mode.
+Non-obvious rules:
+- **`ui/sheet.tsx`** is the only modal shell.
+  - It keeps a stack of open sheets, so Escape closes only the top one and scroll stays locked until the last closes (a stacked confirm used to unlock the sheet beneath).
+  - It moves focus into the dialog on open — stale focus on the opener used to eat Enter (real bug) — and form sheets pass `initialFocus` for their first field.
+  - Its optional Enter-to-confirm is for confirm dialogs only.
+- **`ui/button.tsx`** holds every pressable control — add a variant there instead of styling a button inline. Only the date grid cells and currency rows are hand-rolled.
+- **`ui/confirm-delete-dialog.tsx`** handles every non-catastrophic delete. Account deletion deliberately uses its own heavier dialog.
+- **`ui/amount-input.tsx`** is fixed-width, because resizing per keystroke jittered.
+- **The budget detail sheet** compares spend to the cap only when its transactions span one month. Insights' multi-month periods show a plain total — comparing a quarter to a monthly cap read as over budget (real bug).
+- **`ui/stat.tsx`**'s tone prop is where the gain/loss color rule lives: gold is a gain (Net when positive, Earned, the chart's income line), red a loss, and Spent stays neutral.
 
-`lib/use-currency.tsx` is a Context, same reasoning as auth — many components format money, so one shared subscription beats each mounting its own listener. Every component that formats money reads it directly rather than taking currency as a passed-down prop.
+### Pages
 
-Changed via `components/currency-picker-sheet.tsx`, a bottom sheet rather than a native select — a native select's dropdown can't be restyled to match the dark theme, and needs larger text to dodge iOS Safari's focus-zoom, which looked mismatched against the rest of that row.
-
-### Shared UI pieces
-
-- `components/sheet.tsx` — the app's one modal/bottom-sheet shell (backdrop, slide-up container, Escape-to-close, body-scroll-lock while open). Every dialog in the app renders through it rather than hand-rolling its own overlay. Tracks which sheets are currently open so Escape only closes the topmost one when two are stacked — a backdrop click already naturally only reaches the front sheet, but a global keypress doesn't. Optionally wires Enter-to-confirm, skipped when focus is on an interactive element inside the dialog itself — used only by the two confirm-style dialogs, since the add/edit sheets already get Enter for free from their own form submission. Moves focus into the dialog on open — fixes a real bug where stale focus left on whatever button opened the sheet silently ate every Enter press.
-- `components/sheet-header.tsx` — the shared title + close-button row every sheet uses.
-- `components/amount-input.tsx` — the large centered currency field shared by the transaction and budget sheets. Reads the current currency itself rather than taking it as a prop. Live thousands-grouped display over a plain underlying digit value. Fixed-width, not resized per keystroke — resizing to fit content caused visible jitter while typing, since re-centering shifts existing digits with nothing visible to show for the matching growth on the other side.
-- `components/button.tsx` — **the one text-button recipe** (variants: solid, danger, outline, neutral, danger-outline, link; sizes: inline, block), plus `buttonClass()` for links styled as buttons. Every text button goes through it, so size, weight, border, hover, press and disabled behavior can't drift between screens — add a variant here instead of styling a button inline. Companions with the same purpose: `icon-button.tsx` (icon-only, two sizes), `icon-toggle-group.tsx` (icon view switchers), `pill.tsx` (selection pills and the segmented expense/income control — both states carry the same border so a selected pill never changes size), `meter.tsx` (every progress/comparison bar), and `empty-note.tsx` (the inline "nothing here" line inside lists and sheets).
-- `components/month-stepper.tsx` — a stateless month prev/next control, shared by the one-time-budget month picker and Insights' month browser.
-- `components/transaction-row.tsx` / `delete-transaction-dialog.tsx` — a shared list row plus its confirm wrapper; handles both transaction types with no special-casing needed.
-- `components/confirm-dialog.tsx` — the app's one confirm pattern for non-catastrophic destructive actions. Account deletion is deliberately **not** built on it — that needs a heavier confirm flow.
-- `components/empty-state.tsx` — the shared "nothing here yet" box used across several pages.
-- `components/add-income-source-sheet.tsx` — a stripped-down budget-add sheet, name field only.
-- `components/income-source-detail-sheet.tsx` — the income-side twin of the budget detail sheet, without a progress bar (a source has no cap to show progress against).
-- `lib/use-demo-aware-data.ts` — the live-vs-demo-mode data switching shared by Dashboard and Insights (see Insights below).
-
-### Dashboard (`components/dashboard.tsx`)
-
-Built around net worth rather than a spending list: a greeting header, then one row with "Net" (this month's income minus expenses, the hero figure) and smaller "Spent"/"Earned" beside it — laid out as a two-row grid (labels above, values below, baseline-aligned) rather than three independent stacked blocks, because bottom-aligning boxes that contain different font sizes leaves the actual number baselines visibly misaligned. "Net" reads as a gain or a loss depending on sign; "Earned" always reads as a gain (a sum of income can't go negative); "Spent" stays neutral — the same rule extends to the Insights chart's two line colors, which was the reverse of this until it got made consistent with everywhere else money is shown.
-
-Below that, budgets and income sources share one view, switched by a small toggle in the header row — the same pattern Insights uses for its own view switcher. Replaced an earlier version that stacked both sections on the dashboard at once, and before that a tap-to-open detail sheet on the "Earned" figure alone — both reverted on direct feedback (too much at once; too hidden, respectively).
-
-The expense view is budget cards, largest first — tapping one opens `components/budget-detail-sheet.tsx`, listing that budget's transactions with edit/delete. Progress bar reads as over-budget past 100%. No transaction list on the dashboard itself otherwise. What counts as "spent" depends on a budget's cadence (shared logic with Insights) — monthly budgets reset every calendar month; one-time budgets are scoped to a stored target month and drop off the dashboard entirely once that month passes, rather than needing to be deleted.
-
-The income view is a small grid of square cards, one per source — name plain, this-month total reading as a gain. Went through a few rounds of column count and sizing before a realistic amount reliably stopped clipping on a real phone width. Tapping a card opens `components/income-source-detail-sheet.tsx`. Both views get a matching empty state rather than the income side rendering nothing.
-
-Add-transaction is a mobile FAB / desktop inline button, both opening `add-transaction-sheet.tsx` — an expense/income toggle shown only when adding, not editing (a transaction's type can't change after creation). A budget or source is required for its respective type — the whole form is replaced by a single "add one first" prompt when nothing's pickable, rather than just disabling the picker — a real bug once had someone lose a filled-in amount navigating away to add a budget first, since the picker sits at the bottom of the form.
-
-The date field opens a from-scratch calendar sheet rather than a native date input, for dark-theme styling control. Dates build from local year/month/day rather than a UTC-based conversion, which used to shift the date near midnight in non-UTC timezones — a real past bug.
-
-### Budgets (`app/(app)/budgets/page.tsx`)
-
-Where budgets and income sources are actually created/edited/deleted — the Dashboard only displays them. Budget names are unique (case-insensitive) and length-capped.
-
-**List rows have no decorative accent line anymore — removed on direct feedback, don't re-add it.** Tried both a version proportional to amount (read as a fake meter, since nothing was actually fillable) and a fixed-width version meant to kill that reading (still read as *something*, and was cited as part of why this page felt too visually similar to the Dashboard's real progress bars). The row divider alone is enough now, on both lists here. This is different from Insights' ranked lists, where the equivalent line **is** a real proportional meter and stays.
-
-A one-time budget's target month is an explicit choice via a stepper, not an implicit creation-time stamp — the old implicit version could scope a trip budget to the wrong month if it was planned ahead of time. Switching cadence back to monthly explicitly clears that stale month value.
-
-New accounts are seeded with a handful of default budgets and one default income source on sign-in, gated on a proper "is this a brand-new user" signal from the auth SDK. **Was gated on comparing the account's creation time against its last-sign-in time instead — a real, confirmed bug, don't go back to it.** That comparison is a commonly-suggested check but is unreliable specifically for this app's sign-in method — the backend doesn't reliably advance the sign-in timestamp the way it does for other sign-in flows, so the two timestamps can still match on a repeat login, re-seeding the default data on every single logout/login cycle (confirmed by direct testing). Note that wiping Firestore data alone — without also deleting the underlying Auth account, a separate action in the Firebase console — won't re-trigger seeding; that's expected, since seeding is keyed off the Auth account's history, not the Firestore data's.
-
-Income sources get a second section on this same page rather than their own nav item — touched rarely enough (set up once, occasionally renamed) to read more like a settings list than a page worth visiting on its own.
-
-### Insights (`app/(app)/insights/page.tsx`)
-
-Driven by shared period filters (a single month, calendar-aligned quarters of the current year, the full year, or all time) — the single-month view is the default. Quarters are calendar-aligned rather than rolling windows — explicit feedback that a rolling window ("6 months back from today") is hard to reason about. A past year's quarter has no dedicated view yet — deliberate, deferred.
-
-**Chart**: two line series over the period, income and spend, colored to match the same "gold reads as a gain" rule used everywhere else (see Dashboard above). Spend still carries the visual weight of the "primary" series — fuller opacity, a gradient fill underneath — only the color swapped, not which series reads as the chart's main subject. No numeric axis labels, no hover/crosshair interaction (tried and removed) — just a static end-of-line marker per series. **Known limitation:** the month labels along the bottom are SVG text, so they scale with the chart's rendered width — they come out noticeably smaller on a phone than any CSS text in the app, and larger on desktop. Fixing that properly means moving them out of the SVG into regular HTML text positioned under it, not just bumping a number.
-
-**Ranked budgets list**: scoped strictly to the selected period, dropping any budget with no matching activity in that window — deliberately not the Dashboard's cadence-aware version, which has no period concept at all; don't try to unify them. Its meter line **is** a real proportional comparison here, unlike the decorative one on the Budgets page (see above). A third block, income ranked by source, mirrors this — hidden specifically in the single-month view's date-ordered mode, since that mode already lists every transaction individually and the summary underneath it was just noise there.
-
-**The single-month period only** also gets a month-browser stepper plus a toggle between the ranked list and a flat date-ordered transaction list — the first place in the whole app an income transaction can be edited or deleted at all.
-
-**Demo mode** (dev-only, off a query param on Dashboard or Insights): swaps in a year of generated activity across several budgets, trip-style one-time budgets, and income sources, with the current month deliberately forced negative to exercise that state. Editing is a no-op in demo mode. Still requires signing in normally first.
-
-**Explicitly deferred**: nothing bounds how much transaction history loads — a real scaling concern, intentionally not addressed yet pending real usage data. Don't add consolidation/archiving logic speculatively.
+- **Dashboard** — Net (hero) with Spent/Earned beside it, as a column-flowing grid of `Stat`s so the numbers share one baseline (stacked boxes misaligned them). An icon toggle switches between budget cards (largest first, cadence-aware, tap for the detail sheet) and income-source square cards. Showing both at once, or hiding income behind "Earned", were both reverted on feedback.
+  - Monthly budgets reset each month; one-time budgets count only in their target month and then drop off.
+  - Add-transaction is the FAB (mobile) or an inline button (desktop). The type toggle appears only when adding.
+  - With no budget or source to pick, the whole form becomes an "add one first" prompt — a disabled picker at the bottom of the form made someone lose a typed amount (real bug).
+- **Budgets** — create, edit and delete budgets and income sources; income sources are a second section, not a nav item.
+  - Names are unique case-insensitively and capped in length.
+  - **No decorative accent line on rows — removed on feedback, don't re-add** (it read as a fake meter).
+  - A one-time budget's month is an explicit stepper choice (an implicit creation stamp mis-scoped pre-planned trips); switching to monthly clears it.
+- **Insights** — periods: month (default), calendar quarters of this year (not rolling windows — feedback), year, and all time (earliest transaction through now or the latest future-dated one).
+  - The chart has income and spend lines, with spend as the primary series; no axis numbers, no hover (removed).
+  - Ranked budget and income lists are strictly period-scoped, and their meters are real proportions.
+  - The month period adds a month browser and a ranked-vs-date-list toggle; the date list is the only place income transactions can be edited. The income block is hidden in date-list mode.
+  - Past years' quarters are deliberately deferred.
 
 ### Styling
 
-**Consistency is structural, not remembered: reuse the shared piece, and if none fits, add one — never restyle inline.** The UI had drifted into about twenty near-duplicates (three paddings for one pill, two card radii, two grays for the same label, a selected pill that changed size) before this was centralized. Two mechanisms now prevent that. (1) **Shared components** for anything interactive or repeated — see Shared UI pieces (`Button`, `IconButton`, `IconToggleGroup`, `Pill`, `Meter`, `EmptyNote`, plus `Sheet`, `EmptyState`, `ConfirmDialog`). (2) **Semantic utilities defined once in `app/globals.css`**, so a design change is one edit there: `text-label` and `text-caption` (the two gray text roles), `text-hero`, `card-box` (rounded bordered frame), `input-field` (every text input), `floating` (shadow for things that float without a backdrop — toast, loading pill, FAB; backdrop-dimmed panels like sheets and the drawer get none), and `scrim` (the modal overlay). The tokens themselves (colors, radius, motion timing) also live in `globals.css`; use token names, never raw hex, and use the named radius rather than an arbitrary one.
+**Consistency is structural: reuse the shared piece; if none fits, add one — never restyle inline.** The UI once drifted into ~20 near-duplicates.
+- **Tokens:** everything is defined in `app/globals.css` (colors, radii, `--motion-ui`) — never raw hex or arbitrary radii, shadows, overlays or icon sizes. `lib/theme.ts` mirrors `--background` for metadata; keep them in sync by hand.
+- **Utilities:** `text-body`, `text-strong`, `text-label`, `text-caption`, `text-hero`, `card-box` (includes the `surface` background — never add another to a card), `input-field`, `press`, `floating` (only for elements that float without a backdrop), `scrim`.
+- **Which token when:** `surface` is for cards and sheets; `card` is one step up (inputs, hovered or active rows). `border` frames static things; `border-strong` outlines controls and floating pills. Stacking: loading pill and FAB at 40; sheets, drawer and toast at 50; a confirm over a sheet at 60.
+- **Type — exactly three sizes:**
+  - Small — gray only, via `text-label` or `text-caption`.
+  - Medium — `text-strong` (medium weight) for buttons, pills, toggles, dialog/section headings, the month label and money amounts; `text-body` (normal weight) for everything else. Inputs must stay medium to avoid iOS focus-zoom.
+  - Large — `text-hero`, for page titles, section headings and key figures. Don't make it bigger: the Dashboard stat row would overflow on phones.
+  - The landing page adds one extra-large headline size, never used in the app. Only normal and medium weights exist. The sidebar email is small; sidebar links stay medium (request).
+- **On request:** grays were brightened to pass WCAG AA — keep new grays above that bar. **The border color stays the original dim value; only the width grew to 2px** (hairlines vanished on phones), for every border and divider, landing page included. Dividers come from the list, never per-row borders. Meter bars share one taller height.
+- **Interaction:** solid buttons dim on hover, outlined ones tint, everything presses in, disabled dims. One global focus ring; inputs show focus with an accent border. The custom desktop cursor applies everywhere except text inputs and disabled controls.
+- **Motion:** `--motion-ui` is also Tailwind's default transition duration; only data bars animate slower.
+- **Icons:** control, navigation and large sizes. Icon buttons come in standard, large (mobile menu, desktop add) and FAB sizes. Scrollbars are hidden globally, since they showed inside iOS sheet lists.
 
-`npm run check:style` enforces the mechanical rules — only the medium font size in markup, thick borders on every border and divider, only the one font weight, no raw hex, no arbitrary radii/shadows/overlays/icon sizes, no other arbitrary values except a short reviewed allowlist, no hand-rolled gold-outline button, and that `lib/theme.ts` (which mirrors the background color for metadata and the manifest, since they can't read CSS variables) matches `--background`. Fix a hit by using the shared piece, not by editing the script's rules.
+### Deferred work
 
-**Type: exactly three sizes — small, medium, large — never anything else in the app.** Small is all gray text, via `text-label` (labels above values and fields, lighter gray) or `text-caption` (descriptions, dates, empty messages, lighter-still gray). Medium is the default size: all white text, every button/pill/toggle label (a gray inactive toggle is still a button, so medium), inputs (must stay at or above the iOS zoom threshold), and navigation links. Large is `text-hero`: page titles, section headings like Budgets' "Income sources", Dashboard Net, Budgets Total, Insights' stat figures, and the amount-entry field and symbol. Hero is deliberately no bigger — the Dashboard's Net/Spent/Earned row is the tightest layout on a phone, and the next size up was estimated to overflow it. The sidebar email is small (it's gray text); the sidebar's links and log-out stay medium on request. The landing page follows the same rule (gray prose small; titles, questions and CTA medium; headings hero) plus one landing-only extra-large headline size that must never appear in the app. Small was briefly larger and was brought down so the gap to medium reads as a hierarchy. The chart's SVG axis labels are the one exception, sized in the chart's own coordinate space rather than CSS text sizes — see the chart note in Insights.
-
-**Gray text meets contrast:** both gray tokens were brightened so small gray text passes WCAG AA against every surface (the original dimmer gray failed it). Keep new grays above that bar. **Border color is the original dim value on request — keep it; only the width changed** (sub-pixel → one → a deliberately thick two pixels, because a hairline was effectively invisible on phones). That applies to every border *and* every divider (dividers are one-sided borders), landing page included. **Meter bars share one taller height** for the same reason. Interactive states are uniform by construction: solid and danger buttons dim on hover, outlined ones tint, everything presses in slightly, disabled dims; a single global keyboard-focus ring covers every button and link, and inputs highlight their border in the accent color on focus (the old focus indication was nearly invisible). The custom desktop cursor applies everywhere except text inputs (which keep the text cursor) and disabled controls. UI motion shares one duration variable; only the data bars animate slower, on purpose.
-
-Icons come in a fixed set: control size (inside buttons and icon buttons), navigation/desktop-add size, and large (FAB, empty state, mobile menu). Icon-only buttons come in two sizes: standard, and a larger one only for the mobile header's menu button.
-
-Scrollbars are hidden globally (scrolling itself still works) — they were leaving a visible indicator inside sheet-based lists on iOS. Form fields need a minimum font size or iOS Safari auto-zooms on focus; the shared input class and the medium default already satisfy this, so don't shrink an input.
-
-### Path alias
-
-`@/*` maps to the repo root (see `tsconfig.json`), e.g. `@/lib/data`, `@/components/dashboard`.
+- **Scaling session:** transaction history loads unbounded. The plan is to roll past years up into yearly summaries so only the current year loads individually — don't add consolidation logic outside that session.
+- **Possible tampering-protection session:** the rules limit *where* a user writes, not *what*. A tampering client can put malformed data (odd fields, bad amounts, huge text) into its own documents only. The fix would be shape validation in the rules plus matching input limits in the app (descriptions have no length cap today) — rejected writes fail silently here, since writes are fire-and-forget for offline support.
+- **Insights chart month labels** are SVG text, so they scale with chart width (small on phones, large on desktop). The proper fix is HTML labels under the SVG.
 
 ### Environment
 
-Firebase web config lives in `.env.local` (gitignored). A separate env var holds the Google OAuth client ID used for sign-in.
-
-**Setup gotcha:** Google Identity Services separately requires every origin it'll run from to be listed under that OAuth client's authorized JavaScript origins in Google Cloud Console — a different setting from Firebase's own authorized-domains list. Missing it produces a Google-hosted "Access blocked" error page, not a console warning, so it's easy to mistake for something more exotic if you don't know to look here first.
+Firebase config goes in `.env.local` (gitignored), plus an env var for the Google OAuth client ID. **Gotcha:** every origin that runs GIS must be listed under the OAuth client's *authorized JavaScript origins* in Google Cloud Console (separate from Firebase's authorized domains) — otherwise Google shows an "Access blocked" page.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

@@ -1,53 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
-import { Button } from "@/components/button";
-import { CurrencyPickerSheet } from "@/components/currency-picker-sheet";
-import { DeleteAccountDialog } from "@/components/delete-account-dialog";
-import { InstallInstructions } from "@/components/install-instructions";
-import { Sheet } from "@/components/sheet";
-import { SheetHeader } from "@/components/sheet-header";
-import { currencyMap } from "@/lib/currencies";
+import { currencyMap } from "@/lib/data";
 import { useCurrency } from "@/lib/use-currency";
 import { useInstallPrompt } from "@/lib/use-install-prompt";
+import { PageHeader } from "@/components/layout/app-shell";
+import { Button } from "@/components/ui/button";
+import { InstallInstructions } from "@/components/layout/install-prompt";
+import { Sheet } from "@/components/ui/sheet";
+import { CurrencyPickerSheet } from "@/components/settings/currency-picker-sheet";
+import { DeleteAccountDialog } from "@/components/settings/delete-account-dialog";
 
 export default function SettingsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [installSheetOpen, setInstallSheetOpen] = useState(false);
   const { currency, setCurrency } = useCurrency();
-  const { status: installStatus, promptInstall } = useInstallPrompt();
-
-  const showInstallRow =
-    installStatus === "installable" ||
-    installStatus === "ios" ||
-    installStatus === "other";
+  const { status: installStatus, canInstall, promptInstall } = useInstallPrompt();
 
   return (
-    <div className="mx-auto w-full max-w-xl px-5 pb-32 pt-6 md:pt-10">
-      <h1 className="mb-8 text-hero md:mb-10">Settings</h1>
+    <>
+      <PageHeader title="Settings" />
 
-      <div className="card-box bg-surface">
-        {showInstallRow && (
+      <div className="card-box divide-y-2 divide-border">
+        {canInstall && (
           <SettingRow
             title="Install app"
             description="Add Fehu to your home screen for one-tap access."
           >
-            {installStatus === "installable" ? (
-              <Button variant="solid" className="min-w-20 shrink-0" onClick={promptInstall}>
-                Install
-              </Button>
-            ) : (
-              <Button
-                variant="solid"
-                className="min-w-20 shrink-0"
-                onClick={() => setInstallSheetOpen(true)}
-              >
-                Install
+            <Button
+              variant="solid"
+              className="min-w-20 shrink-0"
+              onClick={installStatus === "installable" ? promptInstall : () => setInstallSheetOpen(true)}
+            >
+              Install
+              {installStatus !== "installable" && (
                 <ChevronRight className="size-4" aria-hidden="true" />
-              </Button>
-            )}
+              )}
+            </Button>
           </SettingRow>
         )}
 
@@ -60,15 +51,14 @@ export default function SettingsPage() {
             className="min-w-20 shrink-0"
             onClick={() => setPickerOpen(true)}
           >
-            {currencyMap[currency].symbol}
+            {currencyMap[currency].symbol || currencyMap[currency].label}
             <ChevronRight className="size-4 text-muted" aria-hidden="true" />
           </Button>
         </SettingRow>
 
         <SettingRow
           title="Delete account"
-          description="Permanently delete your account and all your expenses."
-          last
+          description="Permanently delete your account and all your data."
         >
           <Button
             variant="danger-outline"
@@ -96,38 +86,29 @@ export default function SettingsPage() {
         <Sheet
           open={installSheetOpen}
           onClose={() => setInstallSheetOpen(false)}
-          ariaLabel="Install Fehu"
+          title="Install Fehu"
+          maxWidth="max-w-sm"
         >
-          <SheetHeader
-            title="Install Fehu"
-            onClose={() => setInstallSheetOpen(false)}
-          />
           <InstallInstructions status={installStatus} />
         </Sheet>
       )}
-    </div>
+    </>
   );
 }
 
 function SettingRow({
   title,
   description,
-  last = false,
   children,
 }: {
   title: string;
   description: string;
-  last?: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
-    <div
-      className={`flex items-center justify-between gap-3 px-5 py-4 ${
-        last ? "" : "border-b-2 border-border"
-      }`}
-    >
+    <div className="flex items-center justify-between gap-3 px-5 py-4">
       <div>
-        <div className="text-base font-medium text-foreground">{title}</div>
+        <div className="text-body text-foreground">{title}</div>
         <div className="mt-0.5 text-caption">{description}</div>
       </div>
       {children}

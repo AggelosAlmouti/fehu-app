@@ -7,10 +7,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { onSnapshot, setDoc } from "firebase/firestore";
+import { preferencesDoc } from "@/lib/firestore";
 import { useAuth } from "@/lib/use-auth";
-import { DEFAULT_CURRENCY, isCurrencyCode, type CurrencyCode } from "@/lib/currencies";
+import { DEFAULT_CURRENCY, isCurrencyCode, type CurrencyCode } from "@/lib/data";
 
 type CurrencyContextValue = {
   currency: CurrencyCode;
@@ -20,16 +20,16 @@ type CurrencyContextValue = {
 const CurrencyContext = createContext<CurrencyContextValue | null>(null);
 
 export function CurrencyProvider({ children }: { children: ReactNode }) {
-  const { effectiveUser } = useAuth();
+  const uid = useAuth().effectiveUser?.uid;
   const [currency, setCurrencyState] = useState<CurrencyCode>(DEFAULT_CURRENCY);
 
   useEffect(() => {
-    if (!effectiveUser) {
+    if (!uid) {
       setCurrencyState(DEFAULT_CURRENCY);
       return;
     }
     return onSnapshot(
-      doc(db, "users", effectiveUser.uid, "settings", "preferences"),
+      preferencesDoc(uid),
       (snap) => {
         const value = snap.data()?.currency;
         setCurrencyState(isCurrencyCode(value) ? value : DEFAULT_CURRENCY);
@@ -40,15 +40,11 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         }
       },
     );
-  }, [effectiveUser]);
+  }, [uid]);
 
   function setCurrency(code: CurrencyCode) {
-    if (!effectiveUser) return;
-    setDoc(
-      doc(db, "users", effectiveUser.uid, "settings", "preferences"),
-      { currency: code },
-      { merge: true },
-    );
+    if (!uid) return;
+    setDoc(preferencesDoc(uid), { currency: code }, { merge: true });
   }
 
   return (

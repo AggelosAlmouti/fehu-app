@@ -12,8 +12,9 @@ import {
   ChartLine,
   type LucideIcon,
 } from "lucide-react";
-import { buttonClass } from "@/components/button";
-import { Wordmark } from "@/components/wordmark";
+import { buttonClass } from "@/components/ui/button";
+import { RowList } from "@/components/ui/list-row";
+import { Wordmark } from "@/components/layout/wordmark";
 
 const FEATURES: { icon: LucideIcon; title: string; description: string }[] = [
   {
@@ -102,12 +103,12 @@ export default function LandingPage() {
           {FEATURES.map(({ icon: Icon, title, description }) => (
             <div
               key={title}
-              className="card-box bg-surface p-5"
+              className="card-box p-5"
             >
               <div className="mb-3 flex size-10 items-center justify-center rounded-full bg-card">
                 <Icon className="size-5 text-accent" aria-hidden="true" />
               </div>
-              <h3 className="mb-1 text-base font-medium text-foreground">{title}</h3>
+              <h3 className="mb-1 text-strong text-foreground">{title}</h3>
               <p className="text-caption">{description}</p>
             </div>
           ))}
@@ -118,28 +119,28 @@ export default function LandingPage() {
         <h2 className="mb-8 text-center text-hero text-foreground">
           Frequently asked questions
         </h2>
-        <div className="flex flex-col">
+        <RowList>
           {QUESTIONS.map(({ q, a }, i) => {
             const open = openIndex === i;
             return (
-              <div key={q} className={i === QUESTIONS.length - 1 ? "" : "border-b-2 border-border"}>
+              <li key={q}>
                 <button
                   type="button"
                   onClick={() => setOpenIndex(open ? null : i)}
                   aria-expanded={open}
                   className="flex w-full items-center justify-between gap-3 py-4 text-left"
                 >
-                  <span className="text-base font-medium text-foreground">{q}</span>
+                  <span className="text-strong text-foreground">{q}</span>
                   <ChevronDown
                     className={`size-4 shrink-0 text-detail transition-transform ${open ? "rotate-180" : ""}`}
                     aria-hidden="true"
                   />
                 </button>
                 {open && <p className="pb-4 text-caption">{a}</p>}
-              </div>
+              </li>
             );
           })}
-        </div>
+        </RowList>
       </section>
     </main>
   );

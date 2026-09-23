@@ -1,8 +1,34 @@
-import {
-  currencyMap,
-  DEFAULT_CURRENCY,
-  type CurrencyCode,
-} from "@/lib/currencies";
+export type CurrencyCode = "USD" | "EUR" | "JPY" | "GBP" | "OTHER";
+
+type CurrencyOption = {
+  code: CurrencyCode;
+  label: string;
+  /** Empty for "Other". */
+  symbol: string;
+};
+
+export const currencies: CurrencyOption[] = [
+  { code: "USD", label: "Dollar", symbol: "$" },
+  { code: "EUR", label: "Euro", symbol: "€" },
+  { code: "JPY", label: "Japanese Yen", symbol: "¥" },
+  { code: "GBP", label: "British Pound", symbol: "£" },
+  { code: "OTHER", label: "Other", symbol: "" },
+];
+
+export const DEFAULT_CURRENCY: CurrencyCode = "EUR";
+
+export const currencyMap: Record<CurrencyCode, CurrencyOption> =
+  currencies.reduce(
+    (acc, c) => {
+      acc[c.code] = c;
+      return acc;
+    },
+    {} as Record<CurrencyCode, CurrencyOption>,
+  );
+
+export function isCurrencyCode(value: unknown): value is CurrencyCode {
+  return currencies.some((c) => c.code === value);
+}
 
 export type BudgetCadence = "monthly" | "one-time";
 
@@ -41,6 +67,39 @@ export type Transaction =
       date: string;
     };
 
+type ExpenseTransaction = Extract<Transaction, { type: "expense" }>;
+type IncomeTransaction = Extract<Transaction, { type: "income" }>;
+
+// What gets written to Firestore — everything but the generated id.
+type WithoutId<T> = T extends unknown ? Omit<T, "id"> : never;
+export type NewBudget = WithoutId<Budget>;
+export type NewIncomeSource = WithoutId<IncomeSource>;
+export type NewTransaction = WithoutId<Transaction>;
+
+export const MAX_NAME_LENGTH = 30;
+
+export function isExpense(t: Transaction): t is ExpenseTransaction {
+  return t.type === "expense";
+}
+
+export function isIncome(t: Transaction): t is IncomeTransaction {
+  return t.type === "income";
+}
+
+export function sumAmounts(items: { amount: number }[]): number {
+  return items.reduce((sum, item) => sum + item.amount, 0);
+}
+
+/** Case-insensitive duplicate check for budget/source names. */
+export function nameTaken(
+  items: { id: string; name: string }[],
+  name: string,
+  ignoreId?: string,
+): boolean {
+  const wanted = name.trim().toLowerCase();
+  return items.some((i) => i.id !== ignoreId && i.name.toLowerCase() === wanted);
+}
+
 export function currentMonthLabel(): string {
   return new Date().toLocaleDateString("en-IE", {
     month: "long",
@@ -57,6 +116,15 @@ export function toLocalISODate(d: Date): string {
 
 export function todayISO(): string {
   return toLocalISODate(new Date());
+}
+
+/** "YYYY-MM" for a date — the key budgets and period filters use. */
+function toMonthKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export function currentMonthKey(): string {
+  return toMonthKey(new Date());
 }
 
 const UNITS: [divisor: number, suffix: string][] = [
@@ -83,6 +151,12 @@ function abbreviate(value: number): string | null {
   return `${value}`;
 }
 
+const amountFormat = new Intl.NumberFormat("en-IE", {
+  style: "decimal",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 export function formatCurrency(
   value: number,
   currency: CurrencyCode = DEFAULT_CURRENCY,
@@ -94,12 +168,7 @@ export function formatCurrency(
     const abbreviated = abbreviate(abs);
     return abbreviated === null ? "-" : `${sign}${symbol}${abbreviated}`;
   }
-  const number = new Intl.NumberFormat("en-IE", {
-    style: "decimal",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(abs);
-  return `${sign}${symbol}${number}`;
+  return `${sign}${symbol}${amountFormat.format(abs)}`;
 }
 
 function monthKeyToDate(monthKey: string): Date {
@@ -107,24 +176,34 @@ function monthKeyToDate(monthKey: string): Date {
   return new Date(y, m - 1, 1);
 }
 
-export function endOfMonthISO(monthKey: string): string {
+function endOfMonthISO(monthKey: string): string {
   const [y, m] = monthKey.split("-").map(Number);
   return toLocalISODate(new Date(y, m, 0));
 }
 
+// null means all time.
 export type MonthRange = { startMonth: string; endMonth: string } | null;
+type ResolvedRange = NonNullable<MonthRange>;
 
 function resolveRange(
   range: MonthRange,
   transactions: Transaction[],
-): { startMonth: string; endMonth: string } | null {
+): ResolvedRange | null {
   if (range) return range;
   if (transactions.length === 0) return null;
-  const earliest = transactions.reduce(
-    (min, t) => (t.date < min ? t.date : min),
-    transactions[0].date,
-  );
-  return { startMonth: earliest.slice(0, 7), endMonth: todayISO().slice(0, 7) };
+  const months = transactions.map((t) => t.date.slice(0, 7));
+  const latest = months.reduce((max, m) => (m > max ? m : max), currentMonthKey());
+  const earliest = months.reduce((min, m) => (m < min ? m : min), latest);
+  return { startMonth: earliest, endMonth: latest };
+}
+
+export function transactionsInRange(
+  transactions: Transaction[],
+  range: ResolvedRange,
+): Transaction[] {
+  const startISO = `${range.startMonth}-01`;
+  const endISO = endOfMonthISO(range.endMonth);
+  return transactions.filter((t) => t.date >= startISO && t.date <= endISO);
 }
 
 export type MonthlyTotal = {
@@ -145,7 +224,7 @@ export function monthlyTotals(
 
   const buckets = new Map<string, MonthlyTotal>();
   for (const d = new Date(start); d <= end; d.setMonth(d.getMonth() + 1)) {
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const key = toMonthKey(d);
     buckets.set(key, {
       key,
       label: d.toLocaleDateString("en-IE", { month: "short" }),
@@ -163,47 +242,55 @@ export function monthlyTotals(
 }
 
 export function isThisMonth(iso: string): boolean {
-  const today = new Date();
-  const d = new Date(iso + "T00:00:00");
-  return (
-    d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth()
-  );
+  return iso.slice(0, 7) === currentMonthKey();
 }
 
-type ExpenseTransaction = Extract<Transaction, { type: "expense" }>;
+// A monthly budget always counts; a one-time budget only during its own month.
+export function isBudgetActive(budget: Budget): boolean {
+  return budget.cadence === "monthly" || budget.month === currentMonthKey();
+}
 
-export type BudgetSpending = {
+type BudgetSpending = {
   budget: Budget;
   spent: number;
   transactions: ExpenseTransaction[];
 };
 
+type IncomeBySource = {
+  source: IncomeSource;
+  earned: number;
+  transactions: IncomeTransaction[];
+};
+
+function spendingFor(
+  budget: Budget,
+  expenses: ExpenseTransaction[],
+): BudgetSpending {
+  const matching = expenses.filter((e) => e.budgetId === budget.id);
+  return { budget, spent: sumAmounts(matching), transactions: matching };
+}
+
+function earningsFor(
+  source: IncomeSource,
+  income: IncomeTransaction[],
+): IncomeBySource {
+  const matching = income.filter((t) => t.sourceId === source.id);
+  return { source, earned: sumAmounts(matching), transactions: matching };
+}
+
+// Cadence-aware (Dashboard): this month's spend for every active budget, even
+// at zero. Deliberately separate from the period-scoped version below.
 export function budgetSpending(
   budgets: Budget[],
   transactions: Transaction[],
 ): BudgetSpending[] {
   const expenses = transactions.filter(
-    (t): t is ExpenseTransaction => t.type === "expense",
+    (t): t is ExpenseTransaction => isExpense(t) && isThisMonth(t.date),
   );
-  const currentMonth = todayISO().slice(0, 7);
-  return budgets
-    .filter(
-      (budget) => budget.cadence === "monthly" || budget.month === currentMonth,
-    )
-    .map((budget) => {
-      const matching = expenses.filter((e) => e.budgetId === budget.id);
-      const scoped =
-        budget.cadence === "monthly"
-          ? matching.filter((e) => isThisMonth(e.date))
-          : matching.filter((e) => e.date.slice(0, 7) === budget.month);
-      return {
-        budget,
-        spent: scoped.reduce((sum, e) => sum + e.amount, 0),
-        transactions: scoped,
-      };
-    });
+  return budgets.filter(isBudgetActive).map((b) => spendingFor(b, expenses));
 }
 
+// Period-scoped (Insights): only budgets with activity in the window.
 export function budgetSpendingInPeriod(
   budgets: Budget[],
   transactions: Transaction[],
@@ -211,49 +298,21 @@ export function budgetSpendingInPeriod(
 ): BudgetSpending[] {
   const resolved = resolveRange(range, transactions);
   if (!resolved) return [];
-  const startISO = `${resolved.startMonth}-01`;
-  const endISO = endOfMonthISO(resolved.endMonth);
-  const expenses = transactions.filter(
-    (t): t is ExpenseTransaction =>
-      t.type === "expense" && t.date >= startISO && t.date <= endISO,
-  );
+  const expenses = transactionsInRange(transactions, resolved).filter(isExpense);
   return budgets
-    .map((budget) => {
-      const matching = expenses.filter((e) => e.budgetId === budget.id);
-      return {
-        budget,
-        spent: matching.reduce((sum, e) => sum + e.amount, 0),
-        transactions: matching,
-      };
-    })
+    .map((b) => spendingFor(b, expenses))
     .filter((s) => s.transactions.length > 0);
 }
 
-type IncomeTransaction = Extract<Transaction, { type: "income" }>;
-
-export type IncomeBySource = {
-  source: IncomeSource;
-  earned: number;
-  transactions: IncomeTransaction[];
-};
-
-// Mirrors budgetSpending() — always shows every source, even at €0 this
-// month, the same way a monthly budget always shows regardless of spend.
+// Mirrors budgetSpending() — every source shows, even at zero this month.
 export function incomeBySource(
   sources: IncomeSource[],
   transactions: Transaction[],
 ): IncomeBySource[] {
   const income = transactions.filter(
-    (t): t is IncomeTransaction => t.type === "income" && isThisMonth(t.date),
+    (t): t is IncomeTransaction => isIncome(t) && isThisMonth(t.date),
   );
-  return sources.map((source) => {
-    const matching = income.filter((t) => t.sourceId === source.id);
-    return {
-      source,
-      earned: matching.reduce((sum, t) => sum + t.amount, 0),
-      transactions: matching,
-    };
-  });
+  return sources.map((s) => earningsFor(s, income));
 }
 
 export function incomeBySourceInPeriod(
@@ -263,21 +322,9 @@ export function incomeBySourceInPeriod(
 ): IncomeBySource[] {
   const resolved = resolveRange(range, transactions);
   if (!resolved) return [];
-  const startISO = `${resolved.startMonth}-01`;
-  const endISO = endOfMonthISO(resolved.endMonth);
-  const income = transactions.filter(
-    (t): t is IncomeTransaction =>
-      t.type === "income" && t.date >= startISO && t.date <= endISO,
-  );
+  const income = transactionsInRange(transactions, resolved).filter(isIncome);
   return sources
-    .map((source) => {
-      const matching = income.filter((t) => t.sourceId === source.id);
-      return {
-        source,
-        earned: matching.reduce((sum, t) => sum + t.amount, 0),
-        transactions: matching,
-      };
-    })
+    .map((s) => earningsFor(s, income))
     .filter((s) => s.transactions.length > 0);
 }
 
@@ -291,7 +338,7 @@ export function monthLabel(monthKey: string): string {
 export function shiftMonthKey(monthKey: string, delta: number): string {
   const d = monthKeyToDate(monthKey);
   d.setMonth(d.getMonth() + delta);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  return toMonthKey(d);
 }
 
 export function relativeDay(iso: string): string {

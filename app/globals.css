@@ -1,8 +1,7 @@
 @import "tailwindcss";
 
 /* Source of truth for design tokens. --background is mirrored in
-   lib/theme.ts (metadata/manifest can't read CSS vars) — `npm run check:style`
-   verifies they match. */
+   lib/theme.ts (metadata/manifest can't read CSS vars) — keep them in sync. */
 :root {
   --background: #141414;
   --foreground: #eeeeee;
@@ -30,11 +29,19 @@
   --color-card: var(--card);
   --color-surface: var(--surface);
   --radius-card: var(--radius);
+  --radius-sheet: 1.5rem;
+  --default-transition-duration: var(--motion-ui);
   --font-sans: var(--font-geist-sans);
 }
 
 /* Semantic style utilities — use these instead of re-spelling the recipe,
    so a design change is one edit here. See CLAUDE.md's Styling section. */
+@utility text-body {
+  @apply text-base font-normal;
+}
+@utility text-strong {
+  @apply text-base font-medium;
+}
 @utility text-label {
   @apply text-sm text-detail;
 }
@@ -45,10 +52,13 @@
   @apply text-3xl font-medium leading-tight tracking-tight;
 }
 @utility card-box {
-  @apply rounded-card border-2 border-border;
+  @apply rounded-card border-2 border-border bg-surface;
 }
 @utility input-field {
-  @apply w-full rounded-card border-2 border-border bg-card px-3.5 py-3 text-base text-foreground outline-none transition-colors placeholder:text-muted focus:border-accent;
+  @apply w-full rounded-card border-2 border-border bg-card px-3.5 py-3 text-body text-foreground outline-none transition-colors placeholder:text-muted focus:border-accent;
+}
+@utility press {
+  @apply transition active:scale-95;
 }
 @utility floating {
   @apply shadow-lg shadow-black/40;

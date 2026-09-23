@@ -1,16 +1,16 @@
-import { initializeApp, getApps, getApp } from "firebase/app"
+import { initializeApp, getApps, getApp } from "firebase/app";
 import {
   getAuth,
   initializeAuth,
   indexedDBLocalPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
-} from "firebase/auth"
+} from "firebase/auth";
 import {
   initializeFirestore,
   persistentLocalCache,
   persistentMultipleTabManager,
-} from "firebase/firestore"
+} from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -19,10 +19,10 @@ const firebaseConfig = {
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-}
+};
 
 // Dev hot-reload would call initializeApp() twice and crash otherwise.
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
 // initializeAuth() (not getAuth()) to omit popupRedirectResolver — this app
 // never uses popup/redirect sign-in, and getAuth()'s default resolver
@@ -37,15 +37,15 @@ export const auth = (() => {
         browserLocalPersistence,
         browserSessionPersistence,
       ],
-    })
+    });
   } catch {
-    return getAuth(app)
+    return getAuth(app);
   }
-})()
+})();
 
 // Offline support: writes cache locally and sync when back online.
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager(),
   }),
-})
+});

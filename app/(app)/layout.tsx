@@ -1,5 +1,6 @@
-import { AppShell } from "@/components/app-shell";
+import { AppShell } from "@/components/layout/app-shell";
 import { CurrencyProvider } from "@/lib/use-currency";
+import { InstallProvider } from "@/lib/use-install-prompt";
 
 export default function AppGroupLayout({
   children,
@@ -8,7 +9,9 @@ export default function AppGroupLayout({
 }) {
   return (
     <CurrencyProvider>
-      <AppShell>{children}</AppShell>
+      <InstallProvider>
+        <AppShell>{children}</AppShell>
+      </InstallProvider>
     </CurrencyProvider>
   );
 }
