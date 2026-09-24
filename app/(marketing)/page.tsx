@@ -155,6 +155,7 @@ function Section({
 
 export default function LandingPage() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [slide, setSlide] = useState(0);
 
   return (
     <>
@@ -176,9 +177,16 @@ export default function LandingPage() {
       </section>
 
       <Section id="preview" title="Take a look" width="max-w-3xl">
-        <div className="-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0">
+        <div
+          onScroll={(e) => {
+            const el = e.currentTarget;
+            const max = el.scrollWidth - el.clientWidth;
+            setSlide(max > 0 ? Math.round((el.scrollLeft / max) * (SCREENSHOTS.length - 1)) : 0);
+          }}
+          className="-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto overflow-y-hidden px-5 pb-6 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0"
+        >
           {SCREENSHOTS.map(({ src, caption }, i) => (
-            <Reveal key={src} delay={i * 100} className="w-1/2 shrink-0 snap-center sm:w-auto">
+            <Reveal key={src} delay={i * 100} className="w-3/4 shrink-0 snap-center sm:w-auto">
               <figure>
                 <img
                   src={src}
@@ -191,6 +199,14 @@ export default function LandingPage() {
                 <figcaption className="mt-3 text-center text-caption">{caption}</figcaption>
               </figure>
             </Reveal>
+          ))}
+        </div>
+        <div className="flex justify-center gap-2 sm:hidden" aria-hidden="true">
+          {SCREENSHOTS.map(({ src }, i) => (
+            <span
+              key={src}
+              className={`size-2 rounded-full transition-colors ${i === slide ? "bg-accent" : "bg-border-strong"}`}
+            />
           ))}
         </div>
       </Section>
