@@ -33,6 +33,13 @@ const sizes: Record<ButtonSize, string> = {
   block: "w-full py-3.5",
 };
 
+// A row in a sidebar or drawer nav (the app's pages, the landing page's sections).
+export function navItemClass(active = false) {
+  return `flex w-full items-center gap-3 rounded-card px-3 py-2.5 text-body transition-colors ${
+    active ? "bg-card text-foreground" : "text-detail hover:bg-card/60 hover:text-foreground"
+  }`;
+}
+
 /** For links styled as buttons. */
 export function buttonClass({
   variant = "neutral",
@@ -238,6 +245,9 @@ export function Switch({
     </div>
   );
 }
+
+// Small gray link (site footer).
+export const quietLinkClass = "text-caption transition-colors hover:text-foreground";
 
 // A link inside running text.
 export function TextLink({ href, children }: { href: string; children: ReactNode }) {

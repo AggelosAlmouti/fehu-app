@@ -15,6 +15,7 @@
   --surface: #1a1a18;
   --radius: 0.875rem;
   --motion-ui: 0.2s;
+  --motion-reveal: 0.7s;
 }
 
 @theme inline {
@@ -30,6 +31,7 @@
   --color-surface: var(--surface);
   --radius-card: var(--radius);
   --radius-sheet: 1.5rem;
+  --radius-device: 2rem;
   --default-transition-duration: var(--motion-ui);
   --font-sans: var(--font-geist-sans);
 }

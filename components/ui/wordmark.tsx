@@ -1,12 +1,6 @@
-export function Wordmark({
-  className,
-  hero = false,
-}: {
-  className?: string;
-  hero?: boolean;
-}) {
+export function Wordmark({ className = "" }: { className?: string }) {
   return (
-    <div className={`${hero ? "text-hero" : "text-body"} ${className ?? ""}`}>
+    <div className={`text-body ${className}`}>
       <img
         src="/icons/f-mark.png"
         alt=""

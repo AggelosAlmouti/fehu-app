@@ -11,11 +11,11 @@ import {
   Menu,
   Settings,
   Wallet,
-  X,
 } from "lucide-react";
 import { useAuth } from "@/lib/use-auth";
-import { Wordmark } from "@/components/layout/wordmark";
-import { IconButton } from "@/components/ui/button";
+import { Wordmark } from "@/components/ui/wordmark";
+import { IconButton, navItemClass } from "@/components/ui/button";
+import { Drawer } from "@/components/ui/sheet";
 import { InstallPromptDialog } from "@/components/layout/install-prompt";
 import { Toast } from "@/components/ui/notices";
 
@@ -50,15 +50,6 @@ const navItems = [
   { label: "Insights", href: "/insights", icon: ChartLine },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
-
-// Shared by the nav links and the log-out row so they can't drift apart.
-function navItemClass(active: boolean) {
-  return `flex w-full items-center gap-3 rounded-card px-3 py-2.5 text-body transition-colors ${
-    active
-      ? "bg-card text-foreground"
-      : "text-detail hover:bg-card/60 hover:text-foreground"
-  }`;
-}
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -205,17 +196,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { user, hasPriorSession, loading } = useAuth();
   const clearToast = useCallback(() => setToastMessage(null), []);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
 
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
-
-  useEffect(() => {
-    document.body.style.overflow = menuOpen ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [menuOpen]);
 
   // No remembered session — nothing to show optimistically yet.
   if (loading && !hasPriorSession) {
@@ -256,28 +241,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           />
         </header>
 
-        {menuOpen && (
-          <div className="fixed inset-0 z-50 md:hidden">
-            <button
-              type="button"
-              aria-label="Close menu"
-              onClick={() => setMenuOpen(false)}
-              className="scrim"
-            />
-            <div className="fehu-slide-in absolute left-0 top-0 flex h-full w-72 max-w-4/5 flex-col border-r-2 border-border bg-background px-4 py-6">
-              <div className="mb-8 flex items-center justify-between px-3">
-                <IconButton
-                  icon={X}
-                  label="Close menu"
-                  onClick={() => setMenuOpen(false)}
-                />
-                <Wordmark />
-              </div>
-              <NavLinks onNavigate={() => setMenuOpen(false)} />
-              <AccountFooter onLogOut={() => setMenuOpen(false)} />
-            </div>
-          </div>
-        )}
+        <Drawer open={menuOpen} onClose={closeMenu}>
+          <NavLinks onNavigate={closeMenu} />
+          <AccountFooter onLogOut={closeMenu} />
+        </Drawer>
 
         <main className="flex-1">
           <div className="mx-auto w-full max-w-xl px-5 pb-32 pt-6 md:pt-10">

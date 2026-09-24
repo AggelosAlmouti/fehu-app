@@ -3,9 +3,37 @@
 import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import { X } from "lucide-react";
 import { IconButton } from "@/components/ui/button";
+import { Wordmark } from "@/components/ui/wordmark";
 
-// Open sheet ids, topmost last — lets Escape close only the front sheet.
+// Open layer ids (sheets and drawers), topmost last — lets Escape close only
+// the front one, and keeps the page scroll-locked until the last one closes.
 const openStack: string[] = [];
+
+function useLayer(open: boolean, onClose: () => void) {
+  const id = useId();
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
+  useEffect(() => {
+    if (!open) return;
+    openStack.push(id);
+    document.body.style.overflow = "hidden";
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape" && openStack[openStack.length - 1] === id) onCloseRef.current();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      const i = openStack.indexOf(id);
+      if (i !== -1) openStack.splice(i, 1);
+      if (openStack.length === 0) document.body.style.overflow = "";
+    };
+  }, [open, id]);
+
+  return id;
+}
 
 // Open/edit state for an add-or-edit sheet; `editing` is null when adding.
 export function useEditSheet<T>() {
@@ -53,7 +81,7 @@ export function Sheet({
   initialFocus?: RefObject<HTMLElement | null>;
   children: ReactNode;
 }) {
-  const id = useId();
+  const id = useLayer(open, onClose);
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -67,24 +95,9 @@ export function Sheet({
   }, [open, initialFocus]);
 
   useEffect(() => {
-    if (!open) return;
-    openStack.push(id);
-    document.body.style.overflow = "hidden";
-    return () => {
-      const i = openStack.indexOf(id);
-      if (i !== -1) openStack.splice(i, 1);
-      if (openStack.length === 0) document.body.style.overflow = "";
-    };
-  }, [open, id]);
-
-  useEffect(() => {
+    if (!open || !onConfirm) return;
     function onKey(e: KeyboardEvent) {
-      if (openStack[openStack.length - 1] !== id) return;
-      if (e.key === "Escape") {
-        onClose();
-        return;
-      }
-      if (e.key !== "Enter" || !onConfirm) return;
+      if (e.key !== "Enter" || openStack[openStack.length - 1] !== id) return;
       const active = document.activeElement;
       const insideDialog = active instanceof Node && dialogRef.current?.contains(active);
       if (
@@ -95,11 +108,11 @@ export function Sheet({
       ) {
         return;
       }
-      onConfirm();
+      onConfirm?.();
     }
-    if (open) window.addEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose, onConfirm, id]);
+  }, [open, onConfirm, id]);
 
   if (!open) return null;
 
@@ -128,6 +141,38 @@ export function Sheet({
             <IconButton icon={X} label="Close" onClick={onClose} />
           </div>
         )}
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// Mobile-only menu that slides in from the left (the app's nav).
+export function Drawer({
+  open,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  useLayer(open, onClose);
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 md:hidden">
+      <button type="button" aria-label="Close menu" onClick={onClose} className="fehu-fade-in scrim" />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menu"
+        className="fehu-slide-in absolute left-0 top-0 flex h-full w-72 max-w-4/5 flex-col border-r-2 border-border bg-background px-4 py-6"
+      >
+        <div className="mb-8 flex items-center justify-between px-3">
+          <IconButton icon={X} label="Close menu" onClick={onClose} />
+          <Wordmark />
+        </div>
         {children}
       </div>
     </div>

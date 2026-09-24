@@ -18,9 +18,11 @@ Route groups: `(marketing)` — the public landing page at `/` — and `(app)` �
 
 Nav links use history-*replacing* navigation — push navigation let iOS's edge-swipe-back gesture flip between tabs mid-navigation (real bug).
 
-`Wordmark` draws the "F" from a cropped image, since no font glyph matched the app icon. Shown only in the sidebar/drawer and sign-in gate, not the mobile top bar.
+`Wordmark` (`components/ui/wordmark.tsx`) draws the "F" from a cropped image, since no font glyph matched the app icon. In the app it's shown only in the sidebar/drawer and sign-in gate, not the mobile top bar; the landing page's mobile header does show it.
 
-The landing page is one self-contained file (hero, curated features, one-open-at-a-time FAQ). It has exactly one CTA, to `/dashboard`, and makes no install decisions — install prompting happens after sign-in.
+The `(marketing)` layout wraps the landing page, `/contact` and `/privacy` in `components/marketing/site-chrome.tsx`: a borderless left sidebar (logo and section links) that becomes a burger opening a small dropdown menu on mobile (a full-height drawer swamped the phone screen), plus a footer modeled on LiftBear's: a "© owner year" line on the left with Contact and Privacy links far right, in small gray text with generous bottom space. `/contact` and `/privacy` are server pages. Owner name, email and location live in one constant, `components/marketing/owner.ts` — the privacy policy names them as the GDPR data controller, which the law requires; keep it a plain module, because a server page can't read constants from a `"use client"` file. No terms page yet: not required for a free app, but add one alongside paid plans. Section links smooth-scroll on the landing page (instant under reduced motion) and navigate to `/#section` from other pages.
+
+The landing page: hero, "Take a look" (phone-framed screenshots from `public/screenshots/`), features ordered by importance, FAQ (practical questions first), and Pricing ("Free Beta" populated, the paid plans "Coming soon"). Below the hero, content fades in on first scroll into view. The hero never animates, so it's never invisible while scripts load on a slow connection. Its one CTA, in the hero, goes to `/dashboard`, and it makes no install decisions — install prompting happens after sign-in. Keep `/privacy` true to what the code actually stores.
 
 ### Install and PWA
 
@@ -75,16 +77,17 @@ Firestore security rules live in the Firebase console, **not** this repo: one ex
 **Every component lives under `components/`, in subfolders — never loose at the top level:**
 - `ui/` — generic building blocks with no domain knowledge.
 - `layout/` — the app frame and what it mounts.
+- `marketing/` — the landing/privacy chrome.
 - One folder per feature, named after its page: `transactions/`, `budgets/`, `insights/`, `settings/`.
 
 Route folders hold only `page.tsx`/`layout.tsx`; tiny single-use helpers stay inline in their page. Families of small components share one module (e.g. every pressable control is in `ui/button.tsx`) — check for an existing module before adding a file.
 
 Non-obvious rules:
-- **`ui/sheet.tsx`** is the only modal shell.
+- **`ui/sheet.tsx`** is the only modal shell: `Sheet`, plus `Drawer` (the app shell's left slide-in menu). Both register in the same layer stack.
   - It keeps a stack of open sheets, so Escape closes only the top one and scroll stays locked until the last closes (a stacked confirm used to unlock the sheet beneath).
   - It moves focus into the dialog on open — stale focus on the opener used to eat Enter (real bug) — and form sheets pass `initialFocus` for their first field.
   - Its optional Enter-to-confirm is for confirm dialogs only.
-- **`ui/button.tsx`** holds every pressable control — add a variant there instead of styling a button inline. Only the date grid cells and currency rows are hand-rolled.
+- **`ui/button.tsx`** holds every pressable control, including `navItemClass` for sidebar/drawer rows — add a variant there instead of styling a button inline. Only the date grid cells and currency rows are hand-rolled.
 - **`ui/confirm-delete-dialog.tsx`** handles every non-catastrophic delete. Account deletion deliberately uses its own heavier dialog.
 - **`ui/amount-input.tsx`** is fixed-width, because resizing per keystroke jittered.
 - **The budget detail sheet** compares spend to the cap only when its transactions span one month. Insights' multi-month periods show a plain total — comparing a quarter to a monthly cap read as over budget (real bug).
@@ -119,7 +122,7 @@ Non-obvious rules:
   - The landing page adds one extra-large headline size, never used in the app. Only normal and medium weights exist. The sidebar email is small; sidebar links stay medium (request).
 - **On request:** grays were brightened to pass WCAG AA — keep new grays above that bar. **The border color stays the original dim value; only the width grew to 2px** (hairlines vanished on phones), for every border and divider, landing page included. Dividers come from the list, never per-row borders. Meter bars share one taller height.
 - **Interaction:** solid buttons dim on hover, outlined ones tint, everything presses in, disabled dims. One global focus ring; inputs show focus with an accent border. The custom desktop cursor applies everywhere except text inputs and disabled controls.
-- **Motion:** `--motion-ui` is also Tailwind's default transition duration; only data bars animate slower.
+- **Motion:** `--motion-ui` is also Tailwind's default transition duration; only data bars and the landing page's scroll-in reveals (`--motion-reveal`) are slower.
 - **Icons:** control, navigation and large sizes. Icon buttons come in standard, large (mobile menu, desktop add) and FAB sizes. Scrollbars are hidden globally, since they showed inside iOS sheet lists.
 
 ### Deferred work
