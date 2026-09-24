@@ -76,16 +76,38 @@ async function commitInBatches(writes: ((batch: WriteBatch) => void)[]) {
   await Promise.all(commits);
 }
 
-// Must run while still authenticated, i.e. before deleting the Auth account.
-export async function deleteAllUserData(uid: string) {
+async function collectionDeletes(uid: string) {
   const snapshots = await Promise.all(
     USER_COLLECTIONS.map((name) => getDocs(userCollection(uid, name))),
   );
-  const writes = snapshots.flatMap((snapshot) =>
+  return snapshots.flatMap((snapshot) =>
     snapshot.docs.map((docSnap) => (batch: WriteBatch) => batch.delete(docSnap.ref)),
   );
+}
+
+// Must run while still authenticated, i.e. before deleting the Auth account.
+export async function deleteAllUserData(uid: string) {
+  const writes = await collectionDeletes(uid);
   writes.push((batch) => batch.delete(preferencesDoc(uid)));
   await commitInBatches(writes);
+}
+
+// Dev-only (Settings' test-data row): swaps the user's budgets, incomes and
+// transactions for `data`, each item's id becoming its document id. Deletes
+// finish first, so a rerun can't race a delete against a write of the same doc.
+export async function replaceUserData(
+  uid: string,
+  data: { budgets: Budget[]; incomeSources: IncomeSource[]; transactions: Transaction[] },
+) {
+  await commitInBatches(await collectionDeletes(uid));
+  await commitInBatches([
+    ...data.budgets.map(({ id, ...budget }) => (batch: WriteBatch) =>
+      batch.set(userDoc(uid, "budgets", id), budget)),
+    ...data.incomeSources.map(({ id, ...source }) => (batch: WriteBatch) =>
+      batch.set(userDoc(uid, "incomeSources", id), source)),
+    ...data.transactions.map(({ id, ...transaction }) => (batch: WriteBatch) =>
+      batch.set(userDoc(uid, "transactions", id), transaction)),
+  ]);
 }
 
 function useUserCollection<T extends { id: string }>(

@@ -22,7 +22,7 @@ Nav links use history-*replacing* navigation — push navigation let iOS's edge-
 
 The `(marketing)` layout wraps the landing page, `/contact` and `/privacy` in `components/marketing/site-chrome.tsx`: a borderless left sidebar (logo and section links) that becomes a burger opening a small dropdown menu on mobile (a full-height drawer swamped the phone screen), plus a footer modeled on LiftBear's: a "© owner year" line on the left with Contact and Privacy links far right, in small gray text with generous bottom space. `/contact` and `/privacy` are server pages. Owner name, email and location live in one constant, `components/marketing/owner.ts` — the privacy policy names them as the GDPR data controller, which the law requires; keep it a plain module, because a server page can't read constants from a `"use client"` file. No terms page yet: not required for a free app, but add one alongside paid plans. Section links smooth-scroll on the landing page (instant under reduced motion) and navigate to `/#section` from other pages.
 
-The landing page: hero, "Take a look" (phone-framed screenshots from `public/screenshots/`), features ordered by importance, FAQ (practical questions first), and Pricing ("Free Beta" populated, the paid plans "Coming soon"). Below the hero, content fades in on first scroll into view. The hero never animates, so it's never invisible while scripts load on a slow connection. Its one CTA, in the hero, goes to `/dashboard`, and it makes no install decisions — install prompting happens after sign-in. Keep `/privacy` true to what the code actually stores.
+The landing page: hero, "Take a look" (transparent iPhone mockups from `public/screenshots/` — the frame is part of each image, so the page draws none), features ordered by importance, FAQ (practical questions first), and Pricing ("Free Beta" populated, the paid plans "Coming soon"). Below the hero, content fades in on first scroll into view. The hero never animates, so it's never invisible while scripts load on a slow connection. Its one CTA, in the hero, goes to `/dashboard`, and it makes no install decisions — install prompting happens after sign-in. Keep `/privacy` true to what the code actually stores.
 
 ### Install and PWA
 
@@ -55,7 +55,7 @@ Firestore security rules live in the Firebase console, **not** this repo: one ex
 
 ### Data layer
 
-- Expenses optionally reference a **budget**; income optionally references an **income source**, which is a name only. There's no fixed category list.
+- Expenses optionally reference a **budget**; income optionally references an **income**, which is a name only (e.g. "Salary"). The UI always says "income(s)", never "income source(s)" (request); the code and the Firestore collection keep the `incomeSources` name, since renaming the collection would orphan existing data. There's no fixed category list.
 - **`lib/firestore.ts`** — the one data-access module: a generic realtime subscription wrapped by `useTransactions`/`useBudgets`/`useIncomeSources`, plus path helpers, seeding and the account wipe. Adding a collection means updating the subscription, the wipe list, and the console rules.
   - Editing a transaction's type strips the other type's link field.
   - Deleting a budget or source unlinks its transactions (a real bug shipped without this).
@@ -69,7 +69,7 @@ Firestore security rules live in the Firebase console, **not** this repo: one ex
   - Relative dates only say today/yesterday/tomorrow, otherwise a literal date.
   - Totals come in a cadence-aware Dashboard version and a period-scoped Insights version, **kept deliberately separate**.
 - **Currency** — a curated list plus "Other", with hand-picked symbols prepended manually, never `Intl` currency formatting (its glyphs are inconsistent). The list lives in `data.ts` so pure helpers never import Firebase. `lib/use-currency.tsx` is a Context read directly by every money-formatting component. The picker is a bottom sheet — a native select can't be dark-styled and triggers iOS zoom.
-- `lib/storage.ts` — non-throwing localStorage. `lib/demo-data.ts` — dev-only `?demo=1` on Dashboard/Insights swaps in a generated year (current month forced negative); edits are no-ops, and you still sign in normally.
+- `lib/storage.ts` — non-throwing localStorage. `lib/test-data.ts` — a seeded generator (18 months of history plus 2 future months, trips on one-time budgets). Dev builds show a Settings row that runs it through `replaceUserData`, **wiping the signed-in account's budgets, incomes and transactions** and writing the set as real Firestore data (currency setting and account kept). It replaced an in-memory `?demo=1` mode, so testing exercises the real data path.
 - Dates are built from local year/month/day, never UTC conversion — that shifted dates near midnight (real bug). The date picker slices the month from the ISO string for the same reason.
 
 ### Components
@@ -99,7 +99,7 @@ Non-obvious rules:
   - Monthly budgets reset each month; one-time budgets count only in their target month and then drop off.
   - Add-transaction is the FAB (mobile) or an inline button (desktop). The type toggle appears only when adding.
   - With no budget or source to pick, the whole form becomes an "add one first" prompt — a disabled picker at the bottom of the form made someone lose a typed amount (real bug).
-- **Budgets** — create, edit and delete budgets and income sources; income sources are a second section, not a nav item.
+- **Budgets** — create, edit and delete budgets and incomes; incomes are a second section, not a nav item.
   - Names are unique case-insensitively and capped in length.
   - **No decorative accent line on rows — removed on feedback, don't re-add** (it read as a fake meter).
   - A one-time budget's month is an explicit stepper choice (an implicit creation stamp mis-scoped pre-planned trips); switching to monthly clears it.
@@ -114,7 +114,7 @@ Non-obvious rules:
 **Consistency is structural: reuse the shared piece; if none fits, add one — never restyle inline.** The UI once drifted into ~20 near-duplicates.
 - **Tokens:** everything is defined in `app/globals.css` (colors, radii, `--motion-ui`) — never raw hex or arbitrary radii, shadows, overlays or icon sizes. `lib/theme.ts` mirrors `--background` for metadata; keep them in sync by hand.
 - **Utilities:** `text-body`, `text-strong`, `text-label`, `text-caption`, `text-hero`, `card-box` (includes the `surface` background — never add another to a card), `input-field`, `press`, `floating` (only for elements that float without a backdrop), `scrim`.
-- **Which token when:** `surface` is for cards and sheets; `card` is one step up (inputs, hovered or active rows). `border` frames static things; `border-strong` outlines controls and floating pills. Stacking: loading pill and FAB at 40; sheets, drawer and toast at 50; a confirm over a sheet at 60.
+- **Which token when:** `surface` is for cards and sheets; `card` is one step up (inputs, hovered or active rows). `border` frames static things; `border-strong` outlines controls and floating pills. Stacking: sticky mobile headers at 30; loading pill and FAB at 40; sheets, drawer and toast at 50; a confirm over a sheet at 60.
 - **Type — exactly three sizes:**
   - Small — gray only, via `text-label` or `text-caption`.
   - Medium — `text-strong` (medium weight) for buttons, pills, toggles, dialog/section headings, the month label and money amounts; `text-body` (normal weight) for everything else. Inputs must stay medium to avoid iOS focus-zoom.
@@ -123,6 +123,7 @@ Non-obvious rules:
 - **On request:** grays were brightened to pass WCAG AA — keep new grays above that bar. **The border color stays the original dim value; only the width grew to 2px** (hairlines vanished on phones), for every border and divider, landing page included. Dividers come from the list, never per-row borders. Meter bars share one taller height.
 - **Interaction:** solid buttons dim on hover, outlined ones tint, everything presses in, disabled dims. One global focus ring; inputs show focus with an accent border. The custom desktop cursor applies everywhere except text inputs and disabled controls.
 - **Motion:** `--motion-ui` is also Tailwind's default transition duration; only data bars and the landing page's scroll-in reveals (`--motion-reveal`) are slower.
+- **Safe areas:** the viewport uses `viewport-fit=cover` and iOS's black-translucent status bar, so the page runs under the status bar, Dynamic Island and home indicator. Anything touching a screen edge pads by `env(safe-area-inset-*)`: the sticky mobile headers (which also keep scrolling content out from under the status bar — real bug), the drawer top, the loading pill/toast, sheets' and the footer's bottoms, the FAB, and the body's sides in landscape.
 - **Icons:** control, navigation and large sizes. Icon buttons come in standard, large (mobile menu, desktop add) and FAB sizes. Scrollbars are hidden globally, since they showed inside iOS sheet lists.
 
 ### Deferred work

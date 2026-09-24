@@ -36,7 +36,7 @@ export default function PrivacyPage() {
         <p>
           Your basic Google profile (name, email address, profile picture and
           account ID) when you sign in, and whatever you enter yourself: budgets,
-          income sources, transactions and your currency setting. Fehu never sees
+          incomes, transactions and your currency setting. Fehu never sees
           your Google password, bank details or card details. This data is
           processed to provide the app to you (Art. 6(1)(b) GDPR); you can&apos;t
           use Fehu without it.

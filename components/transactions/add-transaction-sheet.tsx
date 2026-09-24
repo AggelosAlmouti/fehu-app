@@ -172,14 +172,14 @@ export function AddTransactionSheet({
               <p className="text-caption">
                 {blockedOnNoBudgets
                   ? "You need a budget before you can log an expense."
-                  : "You need an income source before you can log income."}
+                  : "You need an income, like Salary, before you can log money coming in."}
               </p>
               <Link
                 href={blockedOnNoBudgets ? "/budgets?add=1" : "/budgets?addSource=1"}
                 onClick={onClose}
                 className={buttonClass({ variant: "outline" })}
               >
-                {blockedOnNoBudgets ? "Add a budget" : "Add an income source"}
+                {blockedOnNoBudgets ? "Add a budget" : "Add an income"}
               </Link>
             </div>
           ) : (
@@ -213,9 +213,9 @@ export function AddTransactionSheet({
                 />
               ) : (
                 <PillPicker
-                  label="Source"
+                  label="Income"
                   loading={sourcesLoading}
-                  loadingText="Loading your income sources…"
+                  loadingText="Loading your incomes…"
                   options={sources}
                   selectedId={sourceId}
                   onSelect={setSourceId}

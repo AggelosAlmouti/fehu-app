@@ -98,10 +98,10 @@ export default function BudgetsPage() {
       )}
 
       <div className="mb-3 mt-10 flex items-center justify-between">
-        <h2 className="text-hero">Income sources</h2>
+        <h2 className="text-hero">Incomes</h2>
         <Button variant="outline" onClick={sourceSheet.openAdd}>
           <Plus className="size-4" aria-hidden="true" />
-          Add source
+          Add income
         </Button>
       </div>
 
@@ -118,7 +118,7 @@ export default function BudgetsPage() {
         </RowList>
       ) : sourcesLoading ? null : (
         <EmptyState icon={Coins}>
-          No income sources yet. Add one to start tagging where your income comes from.
+          No incomes yet. Add one to start tagging where your money comes from.
         </EmptyState>
       )}
 
@@ -151,7 +151,7 @@ export default function BudgetsPage() {
       />
 
       <ConfirmDeleteDialog
-        noun="income source"
+        noun="income"
         name={pendingDeleteSource?.name ?? null}
         onCancel={() => setPendingDeleteSource(null)}
         onConfirm={() => {

@@ -16,9 +16,10 @@ import {
 import { buttonClass } from "@/components/ui/button";
 import { RowList } from "@/components/ui/list-row";
 
+// Device mockups — the phone frame is part of each image.
 const SCREENSHOTS = [
   { src: "/screenshots/dashboard.png", caption: "Your month at a glance" },
-  { src: "/screenshots/budgets.png", caption: "Budgets that fit your life" },
+  { src: "/screenshots/input.png", caption: "Log it in seconds" },
   { src: "/screenshots/insights.png", caption: "See where it all goes" },
 ];
 
@@ -182,8 +183,10 @@ export default function LandingPage() {
                 <img
                   src={src}
                   alt={caption}
+                  width={450}
+                  height={920}
                   loading="lazy"
-                  className="aspect-9/19.5 w-full rounded-device border-2 border-border bg-surface object-cover object-top"
+                  className="h-auto w-full"
                 />
                 <figcaption className="mt-3 text-center text-caption">{caption}</figcaption>
               </figure>

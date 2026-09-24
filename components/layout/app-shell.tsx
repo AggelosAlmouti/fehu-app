@@ -230,7 +230,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </aside>
 
         {/* No wordmark here — only in the drawer. */}
-        <header className="flex items-center px-5 pt-5 md:hidden">
+        <header className="sticky top-0 z-30 flex items-center bg-background px-5 pb-2 pt-[max(1.25rem,env(safe-area-inset-top))] md:hidden">
           <IconButton
             icon={Menu}
             size="lg"

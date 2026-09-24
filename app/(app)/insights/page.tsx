@@ -14,7 +14,7 @@ import {
 } from "@/lib/data";
 import { useAuth } from "@/lib/use-auth";
 import { useCurrency } from "@/lib/use-currency";
-import { useDemoAwareData } from "@/lib/demo-data";
+import { useBudgets, useIncomeSources, useTransactions } from "@/lib/firestore";
 import { PageHeader } from "@/components/layout/app-shell";
 import { AddTransactionSheet } from "@/components/transactions/add-transaction-sheet";
 import { IconToggleGroup, Pill } from "@/components/ui/button";
@@ -63,13 +63,12 @@ export default function InsightsPage() {
   const { currency } = useCurrency();
   const {
     transactions,
-    budgets,
-    sources,
+    loading: transactionsLoading,
     updateTransaction,
     deleteTransaction,
-    transactionsLoading,
-    budgetsLoading,
-  } = useDemoAwareData(effectiveUser?.uid);
+  } = useTransactions(effectiveUser?.uid);
+  const { budgets, loading: budgetsLoading } = useBudgets(effectiveUser?.uid);
+  const { sources } = useIncomeSources(effectiveUser?.uid);
   const loading = transactionsLoading || budgetsLoading;
 
   const [period, setPeriod] = useState<Period>("month");

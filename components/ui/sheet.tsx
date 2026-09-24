@@ -130,7 +130,7 @@ export function Sheet({
         role={role}
         aria-modal="true"
         aria-label={ariaLabel}
-        className={`fehu-slide-up relative w-full ${maxWidth} rounded-t-sheet border-2 border-border bg-surface px-5 pb-8 pt-5 outline-none sm:rounded-sheet sm:pb-6 ${
+        className={`fehu-slide-up relative w-full ${maxWidth} rounded-t-sheet border-2 border-border bg-surface px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 outline-none sm:rounded-sheet sm:pb-6 ${
           scrollable ? "flex max-h-[80vh] flex-col" : ""
         }`}
       >
@@ -167,7 +167,7 @@ export function Drawer({
         role="dialog"
         aria-modal="true"
         aria-label="Menu"
-        className="fehu-slide-in absolute left-0 top-0 flex h-full w-72 max-w-4/5 flex-col border-r-2 border-border bg-background px-4 py-6"
+        className="fehu-slide-in absolute left-0 top-0 flex h-full w-72 max-w-4/5 flex-col border-r-2 border-border bg-background px-4 pb-6 pt-[max(1.5rem,env(safe-area-inset-top))]"
       >
         <div className="mb-8 flex items-center justify-between px-3">
           <IconButton icon={X} label="Close menu" onClick={onClose} />

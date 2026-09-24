@@ -16,7 +16,7 @@ import {
 } from "@/lib/data";
 import { useAuth } from "@/lib/use-auth";
 import { useCurrency } from "@/lib/use-currency";
-import { useDemoAwareData } from "@/lib/demo-data";
+import { useBudgets, useIncomeSources, useTransactions } from "@/lib/firestore";
 import { AddTransactionSheet } from "@/components/transactions/add-transaction-sheet";
 import { CardButton, IconButton, IconToggleGroup, TextLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -34,15 +34,13 @@ export default function DashboardPage() {
   const { currency } = useCurrency();
   const {
     transactions,
-    budgets,
-    sources,
+    loading: transactionsLoading,
     addTransaction,
     updateTransaction,
     deleteTransaction,
-    transactionsLoading,
-    budgetsLoading,
-    sourcesLoading,
-  } = useDemoAwareData(effectiveUser?.uid);
+  } = useTransactions(effectiveUser?.uid);
+  const { budgets, loading: budgetsLoading } = useBudgets(effectiveUser?.uid);
+  const { sources, loading: sourcesLoading } = useIncomeSources(effectiveUser?.uid);
 
   const transactionSheet = useEditSheet<Transaction>();
   const [openBudgetId, setOpenBudgetId] = useState<string | null>(null);
@@ -116,7 +114,7 @@ export default function DashboardPage() {
           onChange={setView}
           options={[
             { value: "expense", icon: Wallet, label: "Show budgets" },
-            { value: "income", icon: Coins, label: "Show income sources" },
+            { value: "income", icon: Coins, label: "Show incomes" },
           ]}
         />
       </div>
@@ -159,13 +157,13 @@ export default function DashboardPage() {
         </div>
       ) : sourcesLoading ? null : (
         <EmptyState icon={Coins}>
-          No income sources yet. Add one from{" "}
+          No incomes yet. Add one from{" "}
           <TextLink href="/budgets">Budgets</TextLink> to start tracking
           income.
         </EmptyState>
       )}
 
-      <div className="fixed bottom-6 right-6 z-40 md:hidden">
+      <div className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-6 z-40 md:hidden">
         <IconButton
           icon={Plus}
           tone="solid"

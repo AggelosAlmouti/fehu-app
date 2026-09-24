@@ -121,7 +121,7 @@ export function SiteChrome({ children }: { children: ReactNode }) {
         <SiteNav />
       </aside>
 
-      <header className="sticky top-0 z-30 flex items-center justify-between bg-background px-5 py-3 md:hidden">
+      <header className="sticky top-0 z-30 flex items-center justify-between bg-background px-5 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:hidden">
         <div ref={menuRef} className="relative -ml-2">
           <IconButton
             icon={menuOpen ? X : Menu}

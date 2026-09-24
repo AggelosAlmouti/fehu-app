@@ -49,7 +49,7 @@ export function AddIncomeSourceSheet({
     onClose();
   }
 
-  const heading = editing ? "Edit income source" : "Add income source";
+  const heading = editing ? "Edit income" : "Add income";
 
   return (
     <Sheet open={open} onClose={onClose} title={heading} maxWidth="max-w-sm" initialFocus={nameRef}>
@@ -61,11 +61,11 @@ export function AddIncomeSourceSheet({
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g. Freelance"
           maxLength={MAX_NAME_LENGTH}
-          error={duplicate ? `You already have an income source named "${trimmedName}".` : undefined}
+          error={duplicate ? `You already have an income named "${trimmedName}".` : undefined}
         />
 
         <Button type="submit" variant="solid" size="block" className="mt-1" disabled={!valid}>
-          {editing ? "Save changes" : "Add income source"}
+          {editing ? "Save changes" : "Add income"}
         </Button>
       </form>
     </Sheet>

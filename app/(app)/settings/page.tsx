@@ -3,6 +3,9 @@
 import { useState, type ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 import { currencyMap } from "@/lib/data";
+import { replaceUserData } from "@/lib/firestore";
+import { generateTestData } from "@/lib/test-data";
+import { useAuth } from "@/lib/use-auth";
 import { useCurrency } from "@/lib/use-currency";
 import { useInstallPrompt } from "@/lib/use-install-prompt";
 import { PageHeader } from "@/components/layout/app-shell";
@@ -55,6 +58,8 @@ export default function SettingsPage() {
             <ChevronRight className="size-4 text-muted" aria-hidden="true" />
           </Button>
         </SettingRow>
+
+        {process.env.NODE_ENV !== "production" && <TestDataRow />}
 
         <SettingRow
           title="Delete account"
@@ -113,5 +118,44 @@ function SettingRow({
       </div>
       {children}
     </div>
+  );
+}
+
+// Dev builds only: wipes the signed-in account's budgets, incomes and
+// transactions and writes a generated set in their place (lib/test-data.ts).
+function TestDataRow() {
+  const { user } = useAuth();
+  const [status, setStatus] = useState<"idle" | "working" | "done" | "failed">("idle");
+
+  async function handleReplace() {
+    if (!user) return;
+    const confirmed = window.confirm(
+      "Replace ALL your budgets, incomes and transactions with generated test data? This can't be undone.",
+    );
+    if (!confirmed) return;
+    setStatus("working");
+    try {
+      await replaceUserData(user.uid, generateTestData());
+      setStatus("done");
+    } catch (error) {
+      console.error(error);
+      setStatus("failed");
+    }
+  }
+
+  return (
+    <SettingRow
+      title="Test data"
+      description="Dev only. Replaces your data with 18 months of history plus 2 future months."
+    >
+      <Button
+        variant="danger-outline"
+        className="min-w-20 shrink-0"
+        onClick={handleReplace}
+        disabled={!user || status === "working"}
+      >
+        {status === "working" ? "Working…" : status === "done" ? "Done" : status === "failed" ? "Failed" : "Replace"}
+      </Button>
+    </SettingRow>
   );
 }
